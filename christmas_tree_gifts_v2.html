@@ -1,0 +1,370 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Happy Christmas · Build a tree with your hands</title>
+<meta name="description" content="Make hand gestures in front of your camera to grow a sparkling Christmas tree, with Silent Night playing.">
+<meta property="og:title" content="Happy Christmas 🎄">
+<meta property="og:description" content="Build a sparkling Christmas tree with your hands. Wish you all the best!">
+<meta name="theme-color" content="#060a1c">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎄</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Quicksand:wght@500;600;700&family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+/* VOICE occasion, hushed and glittering
+   IDEA a winter night where the tree is assembled from light, stage by stage, like the real gesture app
+   PICTURE full-screen slowly turning 3D particle tree: trunk, needles, light string, baubles, star, snow
+   COLOUR midnight #060a1c ground, needle greens, warm gold light, berry red accent
+   TYPE Noto Sans TC 900 title + Noto Sans TC text
+   LAYOUT canvas fills screen; title quiet top-left; stage chips across the bottom (wrap to 3+3 on phone) */
+:root{color-scheme:dark;--bg:#060a1c;--ink:#f4efe2;--soft:#b9bdd6;--gold:#ffcf6b;--chip:rgba(255,255,255,.07);--edge:rgba(255,255,255,.16)}
+*{box-sizing:border-box;min-width:0}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 Quicksand,"Noto Sans TC",system-ui,sans-serif;overflow:hidden}
+#c{position:fixed;inset:0;width:100%;height:100%;display:block}
+.top{position:fixed;top:0;left:0;right:0;padding:calc(env(safe-area-inset-top,0px) + 22px) max(5vw,16px,env(safe-area-inset-right,0px)) 0 max(5vw,16px,env(safe-area-inset-left,0px));pointer-events:none}
+h1{margin:0;font-family:'Great Vibes',cursive;font-weight:400;font-size:clamp(46px,6.4vw,76px);line-height:1.1;color:#ffe6a8;text-shadow:0 0 12px rgba(255,207,107,.55),0 0 28px rgba(255,180,90,.25)}
+.top p{margin:8px 0 0;max-width:30em;color:var(--soft);font-size:15px}
+.bar{position:fixed;left:0;right:0;bottom:0;padding:0 max(5vw,16px,env(safe-area-inset-right,0px)) calc(env(safe-area-inset-bottom,0px) + 20px) max(5vw,16px,env(safe-area-inset-left,0px));display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+.chip{display:flex;align-items:center;gap:8px;min-height:44px;padding:6px 14px;border-radius:999px;border:1px solid var(--edge);background:var(--chip);color:var(--ink);font:600 15px Quicksand,"Noto Sans TC",sans-serif;cursor:pointer;backdrop-filter:blur(6px);transition:background .25s,border-color .25s,color .25s}
+.chip .g{font-size:20px;line-height:1}
+.chip:hover{border-color:rgba(255,207,107,.6)}
+.chip:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.chip.done{color:var(--gold);border-color:rgba(255,207,107,.35)}
+.chip.on{background:rgba(255,207,107,.18);border-color:var(--gold);color:#fff}
+.chip.play{color:var(--soft)}
+.note{position:fixed;right:max(5vw,16px);top:calc(env(safe-area-inset-top,0px) + 26px);font-size:13px;color:var(--soft);pointer-events:none}
+@media(max-width:600px){.note{display:none}.chip{padding:6px 11px;font-size:14px}.top p{font-size:14px}}
+.cam{position:fixed;right:max(3vw,12px);top:calc(env(safe-area-inset-top,0px) + 18px);width:200px;aspect-ratio:4/3;border-radius:14px;overflow:hidden;border:1px solid var(--edge);background:#0b1236}
+.cam video,.cam canvas{position:absolute;inset:0;width:100%;height:100%;transform:scaleX(-1)}
+.cam video{object-fit:cover;opacity:.45}
+#seen{position:fixed;right:max(3vw,12px);top:calc(env(safe-area-inset-top,0px) + 172px);width:200px;text-align:center;font-size:13px;color:var(--soft)}
+  .wish{font-family:'Great Vibes',cursive;font-size:clamp(26px,3.2vw,38px);line-height:1.1;margin:2px 0 0 .6em;color:#fff1d6;text-shadow:0 0 10px rgba(255,207,107,.4)}
+#hint{color:var(--gold)!important;font-size:20px!important;font-weight:600;letter-spacing:.01em;margin-top:14px!important;max-width:min(22em,calc(50vw - 200px))!important;line-height:1.35}
+.start{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:24px 16px;text-align:center;background:radial-gradient(ellipse at 50% 40%,rgba(20,28,72,.82),rgba(3,6,26,.94));transition:opacity .9s ease}
+.start.gone{opacity:0;pointer-events:none}
+.start .big{font-family:'Great Vibes',cursive;font-size:clamp(56px,10vw,112px);line-height:1;color:#ffe6a8;text-shadow:0 0 16px rgba(255,207,107,.6),0 0 40px rgba(255,180,90,.3)}
+.start .sub{font-size:18px;color:var(--soft);max-width:28em}
+.guide{display:flex;flex-wrap:wrap;justify-content:center;gap:10px 22px;max-width:640px;margin:6px 0 8px}
+.guide div{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:14px;color:var(--ink);min-width:84px}
+.guide b{font-size:30px;font-weight:400;line-height:1.2}
+.start small{color:var(--soft);font-size:13px}
+.top,.cam,#seen,.bar{transition:opacity 1s ease .3s}
+body.intro .top,body.intro .cam,body.intro #seen,body.intro .bar{opacity:0}
+#hint{transition:opacity .25s ease}
+.start button{font:600 20px Quicksand,sans-serif;padding:14px 30px;border-radius:999px;border:1px solid var(--gold);background:rgba(255,207,107,.18);color:#fff;cursor:pointer}
+@media(max-width:600px){#hint{max-width:calc(100vw - 140px)!important}h1{font-size:44px}.wish{font-size:24px}.cam{width:96px;top:calc(env(safe-area-inset-top,0px) + 172px)}#seen{width:96px;top:calc(env(safe-area-inset-top,0px) + 246px)}#hint{font-size:17px!important}}
+</style>
+</head>
+<body class="intro">
+<canvas id="c" aria-label="Particle Christmas tree"></canvas>
+<div class="top">
+  <h1>Happy Christmas</h1>
+  <div class="wish">Wish you all the best</div>
+  <p id="hint">Next: make a fist ✊ to grow the trunk</p>
+</div>
+<div class="cam"><video id="cam" autoplay playsinline muted></video><canvas id="hand"></canvas></div>
+<div id="seen"></div>
+<nav class="bar" id="bar"></nav>
+<div class="start" id="startBox">
+  <div class="big">Happy Christmas</div>
+  <div class="sub">Build a Christmas tree with your hands. Make each gesture in front of the camera and watch the tree grow.</div>
+  <div class="guide">
+    <div><b>✊</b>Trunk</div><div><b>🖐</b>Branches</div><div><b>☝️</b>Lights</div><div><b>✌️</b>Ornaments</div><div><b>👋</b>Star &amp; snow</div>
+  </div>
+  <button id="startBtn">Start · turn on camera</button>
+  <small>Turn your sound on for Silent Night 🎵 Your camera stays on your device and nothing is recorded.</small>
+</div>
+<script>
+{
+const cv=document.getElementById('c'),cx=cv.getContext('2d');
+const STAGES=[['✊','Trunk'],['🖐','Branches'],['☝️','Lights'],['✌️','Ornaments'],['👋','Star & snow']];
+const DUR=[2.6,3.8,3.4,3.2,4],HOLD=7;
+let seed=7;const R=()=>(seed=seed*16807%2147483647)/2147483647;
+const ease=x=>x<=0?0:x>=1?1:1-Math.pow(1-x,3);
+const back=x=>{if(x<=0)return 0;if(x>=1)return 1;const c=1.9;return 1+(c+1)*Math.pow(x-1,3)+c*Math.pow(x-1,2)};
+const TAU=Math.PI*2;
+
+const spr={};
+function sprite(col){if(spr[col])return spr[col];const s=document.createElement('canvas');s.width=s.height=64;const g=s.getContext('2d');const gr=g.createRadialGradient(32,32,0,32,32,32);gr.addColorStop(0,'#fff');gr.addColorStop(.12,col);gr.addColorStop(.4,col+'55');gr.addColorStop(1,col+'00');g.fillStyle=gr;g.fillRect(0,0,64,64);return spr[col]=s}
+const flake=(()=>{const s=document.createElement('canvas');s.width=s.height=48;const g=s.getContext('2d');g.translate(24,24);g.strokeStyle='rgba(235,242,255,.9)';g.lineWidth=1.6;g.lineCap='round';for(let i=0;i<6;i++){g.rotate(TAU/6);g.beginPath();g.moveTo(0,0);g.lineTo(0,-19);g.moveTo(0,-11);g.lineTo(-5,-15);g.moveTo(0,-11);g.lineTo(5,-15);g.stroke()}const gr=g.createRadialGradient(0,0,0,0,0,10);gr.addColorStop(0,'rgba(255,255,255,.9)');gr.addColorStop(1,'rgba(255,255,255,0)');g.fillStyle=gr;g.fillRect(-10,-10,20,20);return s})();
+
+const trunk=[],leaves=[],lights=[],orns=[],gifts=[],star=[],snow=[],dust=[];
+for(let i=0;i<320;i++){const y=R()*.2,a=R()*TAU,r=(.06-y*.12)*Math.sqrt(R());trunk.push({x:Math.cos(a)*r,y,z:Math.sin(a)*r,c:R()<.75?'#b8743a':'#ffcf8a',s:.6+R()*.6})}
+// tiered branches: 7 stacked skirts, each flaring out with a drooping edge
+const TIERS=7,greens=['#1fbf6e','#138a52','#2fd884','#0b6b42','#7ef0b0'];
+const tierR=i=>.46*(1-i/TIERS)+.06; // bottom tier widest
+const tierTop=i=>.14+(i+1)*.82/TIERS+.035, tierBot=i=>.14+i*.82/TIERS-.01;
+function surfR(y){let m=0;for(let i=0;i<TIERS;i++){const t=tierTop(i),b=tierBot(i);if(y<=t&&y>=b){const f=(t-y)/(t-b);m=Math.max(m,tierR(i)*Math.pow(f,.85))}}return m}
+const tw8=[...Array(TIERS)].map((_,i)=>tierR(i)**1.6),twS=tw8.reduce((a,b)=>a+b,0);
+for(let i=0;i<3000;i++){let q=R()*twS,tier=0;while(q>tw8[tier]&&tier<TIERS-1){q-=tw8[tier];tier++}const t=tierTop(tier),b=tierBot(tier);const edge=R()<.42;const f=edge?.9+R()*.1:Math.pow(R(),.6)*.92;let y=t-(t-b)*f;let r=tierR(tier)*Math.pow(f,.85);r*=edge?(.94+R()*.08):(.7+.3*Math.sqrt(R()));if(edge)y-=R()*.014;const a=R()*TAU;const gl=R()<.04;const h=(y-.13)/.86;
+ leaves.push({x:Math.cos(a)*r,y,z:Math.sin(a)*r,sx:(R()-.5)*2.4,sy:R()*1.4-.2,sz:(R()-.5)*2.4,d:h*.55+R()*.3,c:gl?'#ffe39a':edge?(R()<.5?'#5ff0a6':'#2fd884'):['#138a52','#0b6b42','#1fbf6e','#0e5c3a'][(R()*4)|0],s:gl?1.1:(edge?.65:.5)+R()*.45,e:edge})}
+const warm=['#fff1c9','#ffcf6b','#ffe6a8','#ffb86b'];
+for(let i=0;i<360;i++){const u=i/360;const y=.17+u*.8;const r=surfR(y)*.96+.012;const a=u*TAU*6.5;lights.push({x:Math.cos(a)*r,y,z:Math.sin(a)*r,u,c:warm[i%4],ph:R()*6.28})}
+const oc=['#ff3b55','#ffc94a','#ff3b55','#bfe6ff','#ff7ab0'];
+for(let i=0;i<56;i++){const tier=(R()*TIERS)|0;const y=tierBot(tier)+.012+R()*.02;const r=tierR(tier)*.93;const a=R()*TAU;orns.push({x:Math.cos(a)*r,y,z:Math.sin(a)*r,d:R()*.6,c:oc[i%oc.length],s:1.7+R()*1.2})}
+// gifts: solid boxes, irregular sizes and turns; [x,z,w,d,h,turn,colour,ribbon,y0,delay]
+const GIFTS=[[-.33,.0,.16,.14,.12,.38,'#ff5a6e','#ffd36b',0,.05],[-.31,-.02,.08,.08,.07,-.25,'#7fb2ff','#fff4e6',.12,.45],[-.26,-.16,.12,.11,.09,-.18,'#4fe39a','#ffd36b',0,.2],[-.1,-.3,.1,.09,.06,.3,'#ff8cc0','#fff4e6',0,.35],[.04,-.33,.15,.1,.07,.1,'#ffd36b','#ff5a6e',0,.3],[.2,-.28,.09,.1,.13,-.5,'#b59bff','#ffd36b',0,.42],[.31,-.14,.15,.14,.16,-.42,'#ff8cc0','#fff4e6',0,.12],[.46,.04,.1,.1,.08,.7,'#4fe39a','#ff5a6e',0,.38],[.38,.2,.12,.1,.1,.2,'#ff5a6e','#fff4e6',0,.25],[-.18,-.05,.11,.1,.14,.55,'#fff4e6','#ff5a6e',0,.5],[.12,-.12,.12,.12,.1,-.1,'#7fb2ff','#ffd36b',0,.15],[-.27,.16,.11,.12,.09,-.6,'#ffd36b','#4fe39a',0,.28],[-.02,-.42,.07,.07,.05,.8,'#ff5a6e','#ffd36b',0,.55],[.31,-.14,.07,.07,.06,.3,'#4fe39a','#ffd36b',.16,.6],[-.22,-.38,.12,.1,.08,.25,'#7fb2ff','#ff5a6e',0,.33],[-.03,-.17,.13,.11,.11,-.3,'#b59bff','#fff4e6',0,.18],[.12,-.46,.09,.08,.06,-.2,'#4fe39a','#fff4e6',0,.48],[-.4,-.2,.1,.09,.08,.15,'#ff8cc0','#ffd36b',0,.22]];
+// stockings hang on the front edges of the tiers
+const SOCKS=[[-.95,1,.5,'#ff4a5f'],[.85,2,.2,'#ff4a5f'],[-.8,3,.65,'#ff4a5f'],[.7,4,.35,'#ff4a5f'],[-.45,5,.8,'#ff4a5f']];
+// star: particles along a 5-point outline and inside, in screen space
+for(let i=0;i<320;i++){const k=(R()*10)|0;const ang=a=>-Math.PI/2+a*Math.PI/5;const r1=k%2?.42:1,r2=(k+1)%2?.42:1;const t=R();let x=Math.cos(ang(k))*r1*(1-t)+Math.cos(ang(k+1))*r2*t,y=Math.sin(ang(k))*r1*(1-t)+Math.sin(ang(k+1))*r2*t;const inner=R()<.35;if(inner){const m=R();x*=m;y*=m}star.push({x,y,ph:R()*6.28,c:R()<.25?'#ffffff':R()<.5?'#ffe39a':'#ffcf6b',s:inner?.6:.8+R()*.5})}
+for(let i=0;i<40;i++)star.push({ray:1,a:R()*TAU,sp:.4+R()*.6,ph:R(),c:'#ffe6a8',s:.5+R()*.5});
+for(let i=0;i<110;i++)snow.push({x:R(),y:R(),v:.018+R()*.03,s:.4+R()*.8,w:R()*6.28,rot:R()*6.28,vr:(R()-.5)*.8});
+for(let i=0;i<70;i++)dust.push({x:R(),y:R(),s:.3+R()*.6,ph:R()*6.28});
+
+const bar=document.getElementById('bar');
+bar.innerHTML=STAGES.map((s,i)=>`<button class="chip" id="st${i}" data-i="${i}"><span class="g">${s[0]}</span>${s[1]}</button>`).join('')+`<button class="chip play" id="play">Again</button><button class="chip play" id="snd" aria-label="Sound">🔊</button>`;
+// ===== 手勢控制：每一段要等上一段長完，才能觸發下一段 =====
+const started=[null,null,null,null,null];          // 每一段開始的時間
+const NEXT_HINT=['make a fist ✊ to grow the trunk','open your hand 🖐 to grow the branches','point one finger up ☝️ to wrap the lights','make a peace sign ✌️ to hang ornaments & gifts','wave your open hand 👋 to light the star & let it snow'];
+const hint=document.getElementById('hint');
+function trigger(i){const now=performance.now()/1000;if(started[i]!==null)return;
+ if(i>0&&(started[i-1]===null||now-started[i-1]<DUR[i-1]))return;   // 上一段還沒長完
+ started[i]=now;bursts.push({t:now,i});if(i===4)window.xmasMusic?.swell()}
+function resetTree(){started.fill(null);bursts.length=0}
+const bursts=[];   // 每段開始時的閃光爆發
+const BURST_Y=[.08,.5,.55,.35,1.0],BURST_C=['#ffcf8a','#5ff0a6','#ffe6a8','#ff7ab0','#fff1c9'];
+const burstP=[...Array(46)].map(()=>({a:R()*TAU,v:.5+R()*.8,s:.6+R()*.8}));
+let lite=false,fpsN=0,fpsT=0;   // 手機或慢電腦：自動減少粒子
+window.treeGesture=name=>{const i={Closed_Fist:0,Open_Palm:1,Pointing_Up:2,Victory:3,Wave:4}[name];if(i!==undefined)trigger(i)};
+bar.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;if(b.id==='play'){resetTree();return}if(b.id==='snd'){b.textContent=window.xmasMusic?.toggle()?'🔊':'🔇';return}trigger(+b.dataset.i)});
+addEventListener('keydown',e=>{if(e.key>='1'&&e.key<='5')trigger(+e.key-1);if(e.key==='r')resetTree()});   // 鍵盤 1~5 也能測試
+let hintNow='',hintTo=null;
+function setHint(t){if(t===hintNow)return;hintNow=t;clearTimeout(hintTo);hint.style.opacity=0;hintTo=setTimeout(()=>{hint.textContent=t;hint.style.opacity=1},250)}
+function progress(now){return started.map((s,i)=>s===null?0:Math.min(1,(now-s)/DUR[i]))}
+let W,H,dpr;
+function size(){dpr=Math.min(2,devicePixelRatio||1);W=cv.clientWidth;H=cv.clientHeight;cv.width=W*dpr;cv.height=H*dpr;cx.setTransform(dpr,0,0,dpr,0,0)}
+const ro=new ResizeObserver(size);ro.observe(cv);size();
+const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+const SOCKP=new Path2D('M-4.6 1 L4.6 1 Q5 1 5 2 L5 10.5 Q5.2 13 8 13.4 Q12.2 14 12 17.6 Q11.8 21.4 7.4 21.4 L-.6 21.4 Q-5.4 21.4 -5.4 16.6 L-5.4 2 Q-5.4 1 -4.6 1 Z');   // 胖胖圓圓的襪子
+const CUFF=new Path2D('M-5.6 -1.6 h11.2 a2.4 2.4 0 0 1 0 4.8 h-11.2 a2.4 2.4 0 0 1 0 -4.8 Z');
+function frame(ms){
+ const now=ms/1000,P=progress(now);
+ if(fpsN>=0){if(!fpsT)fpsT=ms;fpsN++;if(ms-fpsT>2500){if(fpsN/((ms-fpsT)/1000)<40)lite=true;fpsN=-1}}
+ let li=0;
+ const nar=W<600;const base=H-(nar?165:96),S=Math.min(W*(nar?.98:1.02),(base-(nar?150:80))/1.05),cxs=W/2;
+ const ang=.5,ca=Math.cos(ang),sa=Math.sin(ang);
+ const g=cx.createLinearGradient(0,0,0,H);g.addColorStop(0,'#03061a');g.addColorStop(.7,'#0b1236');g.addColorStop(1,'#121a44');cx.globalCompositeOperation='source-over';cx.globalAlpha=1;cx.fillStyle=g;cx.fillRect(0,0,W,H);
+ cx.globalCompositeOperation='lighter';
+ const proj=(x,y,z)=>{const X=x*ca-z*sa,Z=x*sa+z*ca;const k=2.4/(2.4+Z);return [cxs+X*S*k,base-y*S*k-Z*S*.1,k,Z]};
+ const dot=(c,px,py,sz,al)=>{if(al<=0.01)return;cx.globalAlpha=Math.min(1,al);cx.drawImage(sprite(c),px-sz/2,py-sz/2,sz,sz)};
+ const u=S/300;
+ for(const d of dust)if(!lite||(li++%2))dot('#9fb4ff',d.x*W,d.y*H,4*d.s*u+2,.15+.12*Math.sin(now*1.3+d.ph));
+ const pt=ease(P[0]);
+ for(const p of trunk){if(p.y>pt*.2)continue;const [X,Y,k,Z]=proj(p.x,p.y,p.z);dot(p.c,X,Y,7*p.s*k*u+2,.45-Z*.5)}
+ if(P[0]>0&&P[0]<1){const [X,Y]=proj(0,pt*.2,0);dot('#ffe2a8',X,Y,40*u,.9)}
+ for(const p of leaves){if(lite&&(li++%2))continue;const q=ease((P[1]-p.d*.8)/.2);if(q<=0)continue;const x=p.sx+(p.x-p.sx)*q,y=p.sy+(p.y-p.sy)*q,z=p.sz+(p.z-p.sz)*q;const [X,Y,k,Z]=proj(x,y,z);const tw=p.c==='#ffe39a'?.6+.4*Math.sin(now*4+p.x*40):1;dot(p.c,X,Y,(9*p.s*k)*u+1.5,(p.e?.6:.38)*(1-Z*.9)*tw*Math.min(1,q*1.4))}
+ for(const p of lights){if(p.u>P[2])continue;const [X,Y,k,Z]=proj(p.x,p.y,p.z);const tw=.55+.45*Math.sin(now*3+p.ph);const head=P[2]<1&&P[2]-p.u<.02;dot(p.c,X,Y,(head?22:9)*k*u*(.8+.4*tw),(.85-Z*.8)*tw)}
+ for(const p of orns){const q=back((P[3]-p.d)/.25);if(q<=0)continue;const [X,Y,k,Z]=proj(p.x,p.y,p.z);dot(p.c,X,Y,12*p.s*k*u*q,(.85-Z*.7));dot('#ffffff',X-1.5*u,Y-1.5*u,4*k*u*q,.6-Z*.5)}
+ // stockings
+ for(const [si,[a0,tier,dl,col]] of SOCKS.entries()){const q=back((P[3]-dl*.6)/.3);if(q<=0)continue;const y=(tierTop(tier)+tierBot(tier))/2+.01,r=surfR(y)*.82;const a=a0-ang+Math.PI*1.5;const [X,Y,k,Z]=proj(Math.cos(a)*r,y,Math.sin(a)*r);if(Z>.1)continue;sock(X,Y,14*u*k*q,col,Math.sin(now*1.4+a0)*.06,a0>0?-1:1,si)}
+ // gifts, back to front
+ GIFTS.map((g,i)=>{const c=proj(g[0],0,g[1]);return [c[3],g,i]}).sort((a,b)=>b[0]-a[0]).forEach(([,g,i])=>gift(g,ease((P[3]-g[9]*.6)/.35),i));
+
+function shade(hex,m){const n=parseInt(hex.slice(1),16);const ch=[n>>16,n>>8&255,n&255].map(v=>Math.max(0,Math.min(255,Math.round(m>1?v+(255-v)*(m-1):v*m))));return `rgb(${ch})`}
+function star5(x,y,r){cx.beginPath();for(let i=0;i<10;i++){const a=-Math.PI/2+i*Math.PI/5,rr=i%2?r*.45:r;cx.lineTo(x+Math.cos(a)*rr,y+Math.sin(a)*rr)}cx.closePath()}
+function goodie(kind){// 襪口探出來的小東西：拐杖糖、棒棒糖、松枝莓果
+ cx.lineCap='round';
+ if(kind===0){cx.lineWidth=1.7;cx.strokeStyle='#fdf7f2';cx.beginPath();cx.moveTo(2.2,1);cx.lineTo(2.2,-6.5);cx.arc(.2,-6.5,2,0,Math.PI,true);cx.stroke();
+  cx.strokeStyle='#e8283f';cx.setLineDash([.9,1.1]);cx.stroke();cx.setLineDash([])}
+ else if(kind===1){cx.lineWidth=.8;cx.strokeStyle='#f4ede4';cx.beginPath();cx.moveTo(-1.2,1);cx.lineTo(-1.8,-5);cx.stroke();
+  cx.fillStyle='#fdf7f2';cx.beginPath();cx.arc(-1.9,-7.6,3.1,0,TAU);cx.fill();cx.strokeStyle='#e8283f';cx.lineWidth=.95;cx.beginPath();
+  for(let t=0;t<3.1*TAU/2.3;t+=.15){const r=.25+t*.36;cx.lineTo(-1.9+Math.cos(t)*r,-7.6+Math.sin(t)*r)}cx.stroke()}
+ else{cx.strokeStyle='#2f8a4e';cx.lineWidth=.55;for(const [bx,by,ang] of [[-2.6,-3.6,-2.2],[1.8,-3.9,-.9],[-.3,-4.6,-1.6]]){for(let j=0;j<7;j++){const t=j/6,x0=bx*t,y0=by*t;cx.beginPath();cx.moveTo(x0,y0);cx.lineTo(x0+Math.cos(ang-.8)*1.3,y0+Math.sin(ang-.8)*1.3);cx.moveTo(x0,y0);cx.lineTo(x0+Math.cos(ang+.8)*1.3,y0+Math.sin(ang+.8)*1.3);cx.stroke()}}
+  for(const [x,y,cl] of [[-1,-3,'#e8283f'],[.3,-3.6,'#e8283f'],[1.2,-2.7,'#fdf7f2'],[-1.9,-2.2,'#fdf7f2']]){cx.fillStyle=cl;cx.beginPath();cx.arc(x,y,.62,0,TAU);cx.fill()}}}
+function sock(X,Y,sz,col,sw,fl=1,kind=0){const m=sz/10;
+ cx.save();cx.globalCompositeOperation='lighter';cx.globalAlpha=.22;cx.shadowColor='#ff667f';cx.shadowBlur=12;cx.drawImage(sprite(col),X-sz*1.55,Y-sz*.35,sz*3.1,sz*3.1);cx.restore();
+ cx.save();cx.translate(X,Y);cx.rotate(sw);cx.scale(m*fl,m);
+ // 掛繩與襪口上方的小糖果／冬青裝飾
+ cx.strokeStyle='#f8f0e7';cx.lineWidth=.65;cx.beginPath();cx.moveTo(-4.2,-1);cx.bezierCurveTo(-6.5,-6.5,-1.5,-7.5,-2.6,-1.2);cx.stroke();
+ goodie(kind%3);
+ // 厚實的紅色針織襪身
+ const body=cx.createLinearGradient(-5,0,10,20);
+ body.addColorStop(0,'#ff6574');body.addColorStop(.34,'#d92743');body.addColorStop(1,'#85152d');
+ cx.fillStyle=body;cx.shadowColor='rgba(255,55,91,.5)';cx.shadowBlur=2.5;cx.fill(SOCKP);cx.shadowBlur=0;
+ cx.save();cx.clip(SOCKP);
+ // 立體針織 V 紋與柔和高光
+ cx.strokeStyle='rgba(75,0,18,.34)';cx.lineWidth=.42;
+ for(let x=-4.8;x<12;x+=1.9){cx.beginPath();for(let y=3.4;y<22;y+=1.25){cx.moveTo(x-.75,y);cx.lineTo(x,y+.85);cx.lineTo(x+.75,y)}cx.stroke()}
+ cx.strokeStyle='rgba(255,205,210,.24)';cx.lineWidth=.45;
+ for(let x=-3.8;x<10;x+=3.8){cx.beginPath();cx.moveTo(x,4);cx.lineTo(x,19);cx.stroke()}
+ const sheen=cx.createLinearGradient(-5,0,3,0);sheen.addColorStop(0,'rgba(255,255,255,.2)');sheen.addColorStop(1,'rgba(255,255,255,0)');
+ cx.fillStyle=sheen;cx.fillRect(-5,2,5,20);cx.restore();
+ // 依序加入星星、雪花、愛心、冬青等小布章
+ cx.save();cx.shadowColor='rgba(255,255,255,.45)';cx.shadowBlur=2;
+ if(kind%4===0){star5(1,11,3.05);cx.fillStyle='#fff0c8';cx.fill();cx.strokeStyle='#d8b77c';cx.lineWidth=.45;cx.stroke();cx.fillStyle='rgba(255,255,255,.8)';cx.beginPath();cx.arc(.2,10, .55,0,TAU);cx.fill()}
+ else if(kind%4===1){cx.strokeStyle='#e8f5ff';cx.lineWidth=.8;cx.lineCap='round';cx.beginPath();for(let j=0;j<6;j++){const a=j*TAU/6;cx.moveTo(1,11);cx.lineTo(1+2.8*Math.cos(a),11+2.8*Math.sin(a));cx.moveTo(1+1.7*Math.cos(a),11+1.7*Math.sin(a));cx.lineTo(1+2.8*Math.cos(a),11+2.8*Math.sin(a))}cx.stroke();cx.fillStyle='#fff';cx.beginPath();cx.arc(1,11,.8,0,TAU);cx.fill()}
+ else if(kind%4===2){cx.fillStyle='#ffe8ef';cx.beginPath();cx.moveTo(1,14);cx.bezierCurveTo(-5,10,-2,6,1,9);cx.bezierCurveTo(4,6,7,10,1,14);cx.fill();cx.strokeStyle='#e8a5b1';cx.lineWidth=.4;cx.stroke()}
+ else{cx.fillStyle='#f6e9d0';cx.beginPath();cx.arc(-.5,10,2.2,0,TAU);cx.fill();cx.fillStyle='#4b9b65';for(const [x,y,a] of [[-2,8,-.8],[2,8,.8],[0,6,-1.5]]){cx.save();cx.translate(x,y);cx.rotate(a);cx.beginPath();cx.ellipse(0,0,1.1,2.2,0,0,TAU);cx.fill();cx.restore()}cx.fillStyle='#d82c46';cx.beginPath();cx.arc(1.8,10.3,.75,0,TAU);cx.fill()}
+ cx.restore();
+ // 蓬鬆白色毛絨襪口：厚絨底、纖維短毛、上下不規則絨球邊
+ cx.save();cx.shadowColor='rgba(0,0,0,.22)';cx.shadowBlur=2;cx.shadowOffsetY=.5;
+ const cuff=cx.createLinearGradient(0,-2,0,4);cuff.addColorStop(0,'#fffefa');cuff.addColorStop(.55,'#f4eee7');cuff.addColorStop(1,'#d9d0c8');
+ cx.fillStyle=cuff;cx.fill(CUFF);cx.restore();
+ cx.save();cx.clip(CUFF);
+ cx.strokeStyle='rgba(255,255,255,.85)';cx.lineWidth=.45;
+ for(let x=-5.2;x<=5.2;x+=.65){cx.beginPath();cx.moveTo(x,-1.2);cx.lineTo(x+(Math.sin(x*4)*.35),3.1);cx.stroke()}
+ cx.fillStyle='rgba(190,177,165,.32)';for(let x=-4.8;x<=4.8;x+=1.25)for(let y=-.5;y<=2.3;y+=1.2){cx.beginPath();cx.arc(x+((y*10|0)%2)*.5,y,.22,0,TAU);cx.fill()}
+ cx.restore();
+ for(let x=-5.35;x<=5.35;x+=.72){for(const y of [-1.35,3.05]){cx.fillStyle=(x%2?'#fffefa':'#eee7df');cx.beginPath();cx.arc(x,y,.72,0,TAU);cx.fill()}}
+ // 發光輪廓，讓實體襪子從樹枝粒子中浮出
+ cx.save();cx.globalCompositeOperation='lighter';cx.shadowColor='#ff7d91';cx.shadowBlur=8;cx.strokeStyle='rgba(255,180,190,.8)';cx.lineWidth=.75;cx.stroke(SOCKP);cx.shadowBlur=0;cx.strokeStyle='rgba(255,255,255,.55)';cx.lineWidth=.45;cx.stroke(CUFF);cx.restore();
+ cx.restore()}
+function gift([gx,gz,w,d,h,turn,col,rib,y0],q,idx){if(q<=0)return;const c=Math.cos(turn),s_=Math.sin(turn);
+ // 六種材質輪替：冰晶玻璃、星夜、珍珠霧面、湖水藍、香檳金與莓果光澤
+ const styles=[
+  {a:.48,edge:'#c9f6ff',glow:'#8deaff',shine:.95},
+  {a:.56,edge:'#d9caff',glow:'#b49cff',shine:.72},
+  {a:.72,edge:'#fff2d1',glow:'#ffe1a0',shine:.62},
+  {a:.58,edge:'#bafaff',glow:'#53e8ff',shine:.9},
+  {a:.63,edge:'#fff0c2',glow:'#ffd16d',shine:.82},
+  {a:.68,edge:'#ffd4e5',glow:'#ff8db8',shine:.7}
+ ],st=styles[idx%styles.length];
+ const HB=.76,LID0=.7,LIDS=1.08;
+ const P3=(u_,v,yy,sc=1)=>{const lx=(u_-.5)*w*sc,lz=(v-.5)*d*sc;return proj(gx+lx*c-lz*s_,y0+yy*h*q,gz+lx*s_+lz*c)};
+ const FACES=[[[0,0,0],[1,0,0],[1,0,1],[0,0,1],0,.58],[[1,0,0],[1,1,0],[1,1,1],[1,0,1],0,.76],[[1,1,0],[0,1,0],[0,1,1],[1,1,1],0,.58],[[0,1,0],[0,0,0],[0,0,1],[0,1,1],0,.76]];
+ const quad=pts=>{cx.beginPath();pts.forEach(r=>cx.lineTo(r[0],r[1]));cx.closePath()};
+ function box(sc,ya,yb,base,light,band){
+  const sides=FACES.filter(f=>{const p=f.slice(0,4).map(x=>P3(x[0],x[1],ya+(yb-ya)*x[2],sc));return (p[1][0]-p[0][0])*(p[2][1]-p[0][1])-(p[1][1]-p[0][1])*(p[2][0]-p[0][0])<0});
+  for(const f of sides){const [A,B]=[f[0],f[1]],Y=(a,y)=>{const u_=A[0]+(B[0]-A[0])*a,v=A[1]+(B[1]-A[1])*a;return P3(u_,v,y,sc)};
+   const pts=[Y(0,ya),Y(1,ya),Y(1,yb),Y(0,yb)];quad(pts);
+   const g0=pts[0],g1=pts[3],gr=cx.createLinearGradient(g0[0],g0[1],g1[0],g1[1]);
+   gr.addColorStop(0,shade(base,f[5]*.7*light));gr.addColorStop(.48,shade(base,1.12*light));gr.addColorStop(1,shade(base,f[5]*.88*light));
+   cx.globalAlpha=st.a;cx.fillStyle=gr;cx.fill();
+   // 玻璃盒的內部折射亮面
+   cx.globalAlpha=st.a*.24;cx.fillStyle=st.edge;quad([Y(.08,ya),Y(.19,ya),Y(.19,yb),Y(.08,yb)]);cx.fill();
+   // 緞帶穿過盒身
+   cx.globalAlpha=.92;const bandPts=[Y(.43,ya),Y(.57,ya),Y(.57,yb),Y(.43,yb)];quad(bandPts);
+   const bg=cx.createLinearGradient(bandPts[0][0],bandPts[0][1],bandPts[2][0],bandPts[2][1]);bg.addColorStop(0,shade(rib,.7));bg.addColorStop(.48,shade(rib,1.3));bg.addColorStop(1,shade(rib,.82));cx.fillStyle=bg;cx.fill();
+   if(band){cx.globalAlpha=.22;cx.fillStyle='#07152e';quad([Y(0,yb-.05),Y(1,yb-.05),Y(1,yb),Y(0,yb)]);cx.fill()}
+   cx.globalAlpha=.8;cx.strokeStyle=st.edge;cx.lineWidth=.65;quad(pts);cx.stroke();
+  }
+  const T=(u_,v)=>P3(u_,v,yb,sc),top=[T(0,0),T(1,0),T(1,1),T(0,1)];quad(top);
+  const tg=cx.createLinearGradient(top[0][0],top[0][1],top[2][0],top[2][1]);tg.addColorStop(0,shade(base,1.35));tg.addColorStop(.5,shade(base,1.08));tg.addColorStop(1,shade(base,.82));
+  cx.globalAlpha=st.a*.95;cx.fillStyle=tg;cx.fill();
+  cx.globalAlpha=.9;const ribbon=[T(.43,0),T(.57,0),T(.57,1),T(.43,1)];quad(ribbon);cx.fillStyle=shade(rib,1.22);cx.fill();quad([T(0,.43),T(1,.43),T(1,.57),T(0,.57)]);cx.fill();
+  cx.globalAlpha=.9;cx.strokeStyle=st.edge;cx.lineWidth=.8;quad(top);cx.stroke();
+  return sides
+ }
+ cx.save();cx.globalAlpha=Math.min(1,q*1.5);cx.globalCompositeOperation='source-over';
+ // 外層柔光先鋪底，盒體仍保留清楚的實體輪廓
+ const center=P3(.5,.5,.55,1);cx.save();cx.globalCompositeOperation='lighter';cx.globalAlpha=.22*q;cx.shadowColor=st.glow;cx.shadowBlur=18;cx.fillStyle=st.glow;cx.beginPath();cx.ellipse(center[0],center[1],w*S*center[2]*1.1,d*S*center[2]*1.1,0,0,TAU);cx.fill();cx.restore();
+ box(1,0,HB,col,1,true);
+ const lidSides=box(LIDS,LID0,1,col,1.12,false);
+ // 盒蓋與盒身的發光邊緣
+ cx.globalCompositeOperation='lighter';cx.globalAlpha=.62*q;cx.shadowColor=st.glow;cx.shadowBlur=9;cx.strokeStyle=st.edge;cx.lineWidth=1.15;
+ for(const f of lidSides){const a=P3(f[0][0],f[0][1],LID0,LIDS),b=P3(f[1][0],f[1][1],LID0,LIDS);cx.beginPath();cx.moveTo(a[0],a[1]);cx.lineTo(b[0],b[1]);cx.stroke()}
+ cx.shadowBlur=0;
+ // 盒面細碎星塵與不同材質的閃光
+ for(let i=0;i<9;i++){const uu=.1+.8*((idx*.37+i*.173)%1),vv=.12+.76*((idx*.53+i*.217)%1),r=P3(uu,vv,1,LIDS),tw=.35+.65*Math.sin(now*2.8+i*1.7+idx)**2;
+  dot(i%3===0?'#ffffff':st.edge,r[0],r[1],(3.5+2.5*tw)*u,.7*tw)}
+ if(q>.55){const [bx,by,k]=P3(.5,.5,1,LIDS);const bs=Math.min(w,d)*S*k*(idx%3===1?.48:.42)*back((q-.55)/.45);cx.globalCompositeOperation='source-over';cx.globalAlpha=1;bow(idx%3,bx,by,bs,rib)}
+ cx.restore()}
+// 蝴蝶結：三種款式輪流用
+function loop(len,wid,ang,colr,m=1){
+ cx.save();cx.rotate(ang);const g=cx.createLinearGradient(0,-wid*1.2,0,wid*1.2);
+ g.addColorStop(0,shade(colr,1.5*m));g.addColorStop(.22,shade(colr,1.18*m));g.addColorStop(.55,shade(colr,.92*m));g.addColorStop(1,shade(colr,.58*m));
+ cx.shadowColor=colr;cx.shadowBlur=Math.max(2,wid*.22);cx.fillStyle=g;cx.beginPath();cx.moveTo(0,0);cx.bezierCurveTo(len*.22,-wid*1.55,len*1.02,-wid*1.28,len,0);cx.bezierCurveTo(len*1.02,wid*1.28,len*.22,wid*1.55,0,0);cx.fill();cx.shadowBlur=0;
+ cx.fillStyle=shade(colr,.48*m);cx.globalAlpha=.38;cx.beginPath();cx.ellipse(len*.62,0,len*.2,wid*.34,0,0,TAU);cx.fill();cx.globalAlpha=1;
+ cx.strokeStyle='rgba(255,255,255,.68)';cx.lineWidth=Math.max(.7,wid*.11);cx.lineCap='round';cx.beginPath();cx.moveTo(len*.12,-wid*.38);cx.quadraticCurveTo(len*.52,-wid*1.18,len*.91,-wid*.48);cx.stroke();
+ cx.strokeStyle='rgba(255,255,255,.22)';cx.lineWidth=Math.max(.5,wid*.06);cx.beginPath();cx.moveTo(len*.1,wid*.3);cx.quadraticCurveTo(len*.55,wid*.92,len*.9,wid*.35);cx.stroke();cx.restore()}
+function tail(x0,y0,x1,y1,wid,colr){
+ const g=cx.createLinearGradient(x0-wid,y0,x1+wid,y1);g.addColorStop(0,shade(colr,1.2));g.addColorStop(.5,shade(colr,.9));g.addColorStop(1,shade(colr,.62));cx.fillStyle=g;
+ cx.beginPath();cx.moveTo(x0-wid*.42,y0);cx.quadraticCurveTo((x0+x1)/2+wid,(y0+y1)/2,x1-wid*.5,y1);cx.lineTo(x1,y1-wid*.35);cx.lineTo(x1+wid*.5,y1);cx.quadraticCurveTo((x0+x1)/2+wid*1.6,(y0+y1)/2,x0+wid*.42,y0);cx.fill();
+ cx.strokeStyle='rgba(255,255,255,.48)';cx.lineWidth=Math.max(.5,wid*.08);cx.beginPath();cx.moveTo(x0,y0);cx.quadraticCurveTo((x0+x1)/2+wid*.55,(y0+y1)/2,x1,y1-wid*.25);cx.stroke()}
+function bow(style,x,y,s,colr){
+ cx.save();cx.translate(x,y-s*.08);cx.globalCompositeOperation='lighter';cx.globalAlpha=.3;cx.shadowColor=colr;cx.shadowBlur=s*.55;cx.fillStyle=colr;cx.beginPath();cx.arc(0,0,s*.72,0,TAU);cx.fill();cx.restore();
+ cx.save();cx.translate(x,y-s*.08);cx.globalCompositeOperation='source-over';cx.shadowColor='rgba(0,0,0,.3)';cx.shadowBlur=3;cx.shadowOffsetY=1;
+ if(style===0){tail(0,0,-s*.55,s*.75,s*.22,colr);tail(0,0,s*.6,s*.7,s*.22,colr);loop(s*1.05,s*.42,Math.PI+.35,colr);loop(s*1.05,s*.42,-.35,colr)}
+ else if(style===1){const n=9;for(let r=0;r<2;r++)for(let i=0;i<n;i++){const a=-Math.PI/2+(i-(n-1)/2)*(Math.PI*1.25/(n-1))+(r?.17:0);loop(s*(r?.72:.95),s*(r?.26:.3),a,colr,r?1.08:.9)}tail(0,0,-s*.75,s*.35,s*.18,colr);tail(0,0,s*.8,s*.4,s*.18,colr)}
+ else{cx.shadowBlur=0;cx.strokeStyle=shade(colr,1.05);cx.lineWidth=Math.max(1,s*.09);cx.lineCap='round';for(const sg of [-1,1]){cx.beginPath();cx.moveTo(0,0);for(let t=0;t<=1.001;t+=.035){const r=s*(.2+.75*t),a=sg*(t*TAU*1.15)+(sg<0?Math.PI:0);cx.lineTo(Math.cos(a)*r*.9+sg*s*.25*t,Math.sin(a)*r*.45+s*.45*t)}cx.stroke()}loop(s*.8,s*.34,Math.PI+.5,colr);loop(s*.8,s*.34,-.5,colr);loop(s*.6,s*.28,-Math.PI/2,colr,1.1)}
+ cx.shadowBlur=0;cx.shadowOffsetY=0;const knot=cx.createRadialGradient(-s*.06,-s*.08,0,0,0,s*.22);knot.addColorStop(0,shade(colr,1.55));knot.addColorStop(.6,shade(colr,1.02));knot.addColorStop(1,shade(colr,.62));cx.fillStyle=knot;cx.beginPath();cx.ellipse(0,0,s*.19,s*.15,-.2,0,TAU);cx.fill();cx.fillStyle='rgba(255,255,255,.62)';cx.beginPath();cx.ellipse(-s*.055,-s*.055,s*.075,s*.045,-.3,0,TAU);cx.fill();cx.restore()}
+
+ // particle star
+ const ps=back(P[4]*1.5);
+ if(ps>0){const [X,Y]=proj(0,1.0,0);const rr=24*u*ps;dot('#ffcf6b',X,Y,80*u*ps,.35+.1*Math.sin(now*2));
+  for(const p of star){if(p.ray){const l=((now*p.sp+p.ph)%1);const d=rr*(1.1+l*2.4);dot(p.c,X+Math.cos(p.a+ang*.3)*d,Y+Math.sin(p.a+ang*.3)*d,5*u*p.s,(1-l)*.7*ps);continue}
+   const tw=.6+.4*Math.sin(now*5+p.ph);dot(p.c,X+p.x*rr,Y+p.y*rr,7*u*p.s*(.8+.4*tw),.75*tw)}}
+ // snow: few faint flakes
+ if(P[4]>0){cx.globalCompositeOperation='source-over';const al=Math.min(1,P[4]*2);for(const f of snow){const y=((f.y+(reduce?0:now*f.v))%1.05)-.03;const x=f.x+Math.sin(now*.6+f.w)*.012;const sz=(3+4*f.s)*u+3;const sh=.5+.5*Math.sin(now*2.2+f.w*7);cx.globalCompositeOperation='lighter';dot('#cfe0ff',x*W,y*H,sz*2.4,al*.18*sh);cx.globalCompositeOperation='source-over';cx.save();cx.globalAlpha=al*(.28+.22*f.s)*(.75+.25*sh);cx.translate(x*W,y*H);cx.rotate(f.rot+now*f.vr);cx.drawImage(flake,-sz/2,-sz/2,sz,sz);cx.restore()}}
+ cx.globalCompositeOperation='lighter';
+ for(let b=bursts.length-1;b>=0;b--){const B=bursts[b],l=(now-B.t)/1.4;if(l>1){bursts.splice(b,1);continue}
+  const [X,Y]=proj(0,BURST_Y[B.i],0);const e=ease(l);
+  dot(BURST_C[B.i],X,Y,180*u*(.4+e),.5*(1-l));
+  for(const q of burstP){const d=e*q.v*95*u;dot(q.s>1?'#ffffff':BURST_C[B.i],X+Math.cos(q.a)*d,Y+Math.sin(q.a)*d*.8,7*u*q.s,(1-l)*.9)}}
+ cx.globalAlpha=1;cx.globalCompositeOperation='source-over';
+ const nx=started.findIndex(s=>s===null);setHint(nx<0?(P[4]>=1?'Happy Christmas 🎄 Tap “Again” to play once more':''):(nx>0&&P[nx-1]<1?'Growing…':'Next: '+NEXT_HINT[nx]));
+ const cur=P.findIndex(v=>v<1);STAGES.forEach((s,i)=>{const b=document.getElementById('st'+i);b.classList.toggle('on',(cur<0?i===4:i===cur&&P[i]>0));b.classList.toggle('done',P[i]>=1&&!(cur<0&&i===4))});
+ requestAnimationFrame(frame)}
+requestAnimationFrame(frame);
+}
+</script>
+<audio id="music" src="silent-night.mp3" loop preload="auto"></audio>
+<script>
+// ===== 平安夜（Silent Night）伴奏：鋼琴主旋律＋小提琴伴奏，慢版 =====
+// 曲子是 1818 年的作品（公共財），編曲是我們自己做的，音色來自免費授權的 FluidR3 音色庫。
+{
+const audio=document.getElementById('music');let on=true,fadeTimer;
+function fadeTo(v,ms){clearInterval(fadeTimer);const from=audio.volume,t0=performance.now();
+ fadeTimer=setInterval(()=>{const k=Math.min(1,(performance.now()-t0)/ms);audio.volume=from+(v-from)*k;if(k>=1)clearInterval(fadeTimer)},50)}
+window.xmasMusic={
+ start(){if(this.started)return;this.started=true;audio.volume=0;audio.play().then(()=>fadeTo(.6,400)).catch(e=>console.warn('music',e))},
+ toggle(){on=!on;audio.muted=!on;if(on&&audio.paused){this.started=false;this.start()}return on},
+ swell(){fadeTo(.9,3000)}
+};
+// 音樂不依賴手勢辨識：就算鏡頭載入失敗，按下開始也會播放
+document.getElementById('startBtn').addEventListener('click',()=>window.xmasMusic.start());
+}
+</script>
+<script type="module">
+// ===== 鏡頭＋手勢辨識（和第一步一樣，多了「手勢要維持一下才算數」） =====
+import { GestureRecognizer, FilesetResolver, DrawingUtils } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14";
+const video=document.getElementById('cam'),canvas=document.getElementById('hand'),ctx=canvas.getContext('2d');
+const seen=document.getElementById('seen'),startBox=document.getElementById('startBox'),startBtn=document.getElementById('startBtn');
+const ZH={Closed_Fist:'✊ Fist',Open_Palm:'🖐 Open hand',Pointing_Up:'☝️ One finger',Victory:'✌️ Peace',Wave:'👋 Wave'};
+let recognizer,lastTime=-1;
+
+// 揮手判斷（第一步修正後的版本）
+const trail=[];let waveUntil=0;
+const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
+function handIsOpen(h){const palm=dist(h[0],h[9]);return [8,12,16,20].filter(i=>dist(h[0],h[i])>palm*1.5).length>=3}
+function isWaving(h,now){trail.push({x:h[9].x,t:now,open:handIsOpen(h)});while(trail.length&&now-trail[0].t>1500)trail.shift();
+ if(trail.filter(p=>p.open).length/trail.length<.6)return false;let turns=0,dir=0,anchor=trail[0].x;
+ for(const p of trail){const d=p.x-anchor;if(Math.abs(d)>.04){const nd=Math.sign(d);if(dir!==0&&nd!==dir)turns++;dir=nd;anchor=p.x}}return turns>=2}
+
+// 同一個手勢要連續維持 0.4 秒才送出，避免手在換姿勢途中被誤判
+let holdName=null,holdSince=0;
+function steady(name,now){if(name!==holdName){holdName=name;holdSince=now;return null}return now-holdSince>400?name:null}
+
+startBtn.addEventListener('click',async()=>{
+ startBtn.disabled=true;
+ window.xmasMusic?.start();   // 瀏覽器規定：聲音要在使用者按下按鈕後才能播放
+ try{
+  startBtn.textContent='Loading hand tracking…';
+  const vision=await FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm");
+  const opts=d=>({baseOptions:{modelAssetPath:"https://storage.googleapis.com/mediapipe-models/gesture_recognizer/gesture_recognizer/float16/1/gesture_recognizer.task",delegate:d},runningMode:"VIDEO",numHands:1});
+  try{recognizer=await GestureRecognizer.createFromOptions(vision,opts("GPU"))}catch(e){recognizer=await GestureRecognizer.createFromOptions(vision,opts("CPU"))}
+  startBtn.textContent='Turning on camera…';
+  video.srcObject=await navigator.mediaDevices.getUserMedia({video:{facingMode:"user",width:640,height:480}});
+  await video.play();canvas.width=video.videoWidth;canvas.height=video.videoHeight;
+  startBox.classList.add('gone');document.body.classList.remove('intro');setTimeout(()=>startBox.remove(),1000);requestAnimationFrame(loop);
+ }catch(err){console.error(err);startBtn.disabled=false;startBtn.textContent='Something went wrong: '+err.message+' · tap to retry'}
+});
+
+function loop(){const now=performance.now();
+ if(video.currentTime!==lastTime){lastTime=video.currentTime;const r=recognizer.recognizeForVideo(video,now);ctx.clearRect(0,0,canvas.width,canvas.height);
+  if(r.landmarks.length){const h=r.landmarks[0];const du=new DrawingUtils(ctx);
+   du.drawConnectors(h,GestureRecognizer.HAND_CONNECTIONS,{color:"#ffcf6b",lineWidth:4});du.drawLandmarks(h,{color:"#ff4a5f",lineWidth:1,radius:4});
+   if(isWaving(h,now))waveUntil=now+1500;
+   const name=now<waveUntil?'Wave':r.gestures[0]?.[0]?.categoryName;
+   seen.textContent=ZH[name]||'';
+   const ok=name==='Wave'?name:steady(name,now);
+   if(ok&&window.treeGesture)window.treeGesture(ok);
+  }else{trail.length=0;holdName=null;seen.textContent='No hand in view'}}
+ requestAnimationFrame(loop)}
+</script>
+</body>
+</html>
