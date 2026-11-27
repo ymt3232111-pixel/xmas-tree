@@ -285,12 +285,15 @@ function sock(X,Y,sz,col,sw,fl=1,kind=0){
   cx.beginPath();cx.moveTo(x,2.95);cx.lineTo(x-wobble,3.65+(.18*Math.sin(x*4)));cx.stroke();
  }
 
- // 微弱輪廓光：只有這一小段使用加亮模式；襪身與裝飾始終保持實體不透明
- cx.save();cx.globalCompositeOperation='lighter';cx.globalAlpha=.22;
- cx.shadowColor='#ff8b9c';cx.shadowBlur=2.2;
- cx.strokeStyle='rgba(255,190,198,.7)';cx.lineWidth=.55;cx.stroke(SOCKP);
- cx.shadowColor='#fff0e5';cx.shadowBlur=1.5;
- cx.strokeStyle='rgba(255,248,238,.62)';cx.lineWidth=.5;cx.stroke(CUFF);
+ // 較清楚但柔和的外緣光：布料仍以 source-over 實體繪製，只有輪廓使用加亮模式
+ cx.save();cx.globalCompositeOperation='lighter';cx.globalAlpha=.62;
+ cx.shadowColor='#ff637f';cx.shadowBlur=7.5;
+ cx.strokeStyle='rgba(255,116,145,.78)';cx.lineWidth=.9;cx.stroke(SOCKP);
+ cx.globalAlpha=.52;cx.shadowColor='#fff0e5';cx.shadowBlur=5.5;
+ cx.strokeStyle='rgba(255,245,232,.82)';cx.lineWidth=.75;cx.stroke(CUFF);
+ // 再加一道極細內側亮線，讓毛絨邊緣從深色樹枝中分離。
+ cx.globalAlpha=.7;cx.shadowBlur=1.2;cx.strokeStyle='rgba(255,226,226,.68)';
+ cx.lineWidth=.38;cx.stroke(SOCKP);
  cx.restore();
  cx.restore();
 }
@@ -439,45 +442,48 @@ function ribbonTail(side,s,colr){
  cx.restore();
 }
 function bow(style,x,y,s,colr){
- // Seat the bow into the ribbon cross on the lid with a small contact shadow.
+ // 蝴蝶結只保留緞帶耳朵與中心結，不再畫垂帶或連接尾帶。
+ // 依款式分成一對、兩對、三對耳朵，讓不同禮物有不同輪廓。
+ const pairCount=[1,2,3][style%3];
  cx.save();cx.translate(x,y);
- cx.globalCompositeOperation='source-over';
- cx.globalAlpha=.2;cx.fillStyle='#091225';
- cx.shadowColor='rgba(0,0,0,.28)';cx.shadowBlur=Math.max(1,s*.16);
- cx.beginPath();cx.ellipse(0,s*.06,s*.43,s*.12,-.04,0,TAU);cx.fill();
- cx.shadowBlur=0;cx.globalAlpha=1;
+ cx.globalCompositeOperation='source-over';cx.globalAlpha=1;
 
- // Short satin bridge connects the lid's ribbon cross to the knot.
- const bridge=cx.createLinearGradient(-s*.1,0,s*.1,s*.2);
- bridge.addColorStop(0,shade(colr,.7));bridge.addColorStop(.42,shade(colr,1.2));bridge.addColorStop(1,shade(colr,.76));
- cx.fillStyle=bridge;cx.beginPath();
- cx.moveTo(-s*.11,s*.1);cx.quadraticCurveTo(-s*.14,s*.015,-s*.09,-s*.09);
- cx.lineTo(s*.09,-s*.09);cx.quadraticCurveTo(s*.14,s*.015,s*.11,s*.1);cx.closePath();cx.fill();
+ // 輕微接觸陰影，讓耳朵與中心結落在盒蓋上。
+ cx.save();cx.globalAlpha=.18;cx.fillStyle='#091225';
+ cx.shadowColor='rgba(0,0,0,.24)';cx.shadowBlur=Math.max(1,s*.13);
+ cx.beginPath();cx.ellipse(0,s*.045,s*.42,s*.11,0,0,TAU);cx.fill();cx.restore();
 
- // Tails sit behind the loops and visibly emerge from the centre.
- ribbonTail(-1,s,colr);ribbonTail(1,s*.94,colr);
+ // 先畫較外側、較後方的耳朵，再逐層往中心收束。
+ for(let layer=pairCount-1;layer>=0;layer--){
+  const spread=pairCount===1?.52:(pairCount===2?.62:.70);
+  const angle=pairCount===1?.10:(pairCount===2?.17:.23);
+  const scale=pairCount===1?1:(pairCount===2?(layer===0?.86:1):(.72+layer*.14));
+  const offset=layer*s*.105;
+  const earSize=s*scale;
+  for(const side of [-1,1]){
+   cx.save();
+   cx.translate(side*offset, -s*.015+layer*s*.018);
+   cx.rotate(side*(angle+layer*.035));
+   ribbonLoop(side,earSize,colr);
+   cx.restore();
+  }
+ }
 
- // Back loop and front loop overlap at the knot like a real tied ribbon.
- cx.save();cx.translate(0,-s*.02);cx.rotate(-.035);ribbonLoop(1,s,colr);cx.restore();
- cx.save();cx.translate(0,s*.015);cx.rotate(.025);ribbonLoop(-1,s*.96,colr);cx.restore();
-
- // Soft, plump centre knot: a wrapped band with a highlight and a shaded fold.
- const knot=cx.createLinearGradient(-s*.18,-s*.16,s*.18,s*.17);
- knot.addColorStop(0,shade(colr,1.52));
- knot.addColorStop(.22,shade(colr,1.25));
- knot.addColorStop(.5,shade(colr,.88));
- knot.addColorStop(.78,shade(colr,1.18));
- knot.addColorStop(1,shade(colr,.66));
+ // 小巧的中心束結，壓住所有耳朵的根部。
+ const knot=cx.createLinearGradient(-s*.16,-s*.13,s*.16,s*.14);
+ knot.addColorStop(0,shade(colr,1.5));
+ knot.addColorStop(.25,shade(colr,1.22));
+ knot.addColorStop(.55,shade(colr,.86));
+ knot.addColorStop(.82,shade(colr,1.16));
+ knot.addColorStop(1,shade(colr,.68));
  cx.fillStyle=knot;cx.beginPath();
- cx.moveTo(-s*.18,-s*.11);
- cx.bezierCurveTo(-s*.22,-s*.015,-s*.14,s*.12,0,s*.145);
- cx.bezierCurveTo(s*.15,s*.12,s*.21,-s*.015,s*.16,-s*.11);
- cx.bezierCurveTo(s*.07,-s*.18,-s*.08,-s*.18,-s*.18,-s*.11);
+ cx.moveTo(-s*.155,-s*.085);
+ cx.bezierCurveTo(-s*.2,-s*.015,-s*.12,s*.105,0,s*.13);
+ cx.bezierCurveTo(s*.13,s*.105,s*.19,-s*.015,s*.15,-s*.085);
+ cx.bezierCurveTo(s*.065,-s*.15,-s*.07,-s*.15,-s*.155,-s*.085);
  cx.closePath();cx.fill();
- cx.strokeStyle='rgba(255,255,255,.62)';cx.lineWidth=Math.max(.6,s*.032);
- cx.beginPath();cx.moveTo(-s*.09,-s*.105);cx.quadraticCurveTo(-s*.15,-s*.005,-s*.055,s*.075);cx.stroke();
- cx.strokeStyle='rgba(45,25,50,.24)';cx.lineWidth=Math.max(.55,s*.03);
- cx.beginPath();cx.moveTo(s*.075,-s*.105);cx.quadraticCurveTo(s*.15,-s*.01,s*.07,s*.09);cx.stroke();
+ cx.strokeStyle='rgba(255,255,255,.54)';cx.lineWidth=Math.max(.5,s*.027);
+ cx.beginPath();cx.moveTo(-s*.07,-s*.09);cx.quadraticCurveTo(-s*.12,-s*.01,-s*.045,s*.065);cx.stroke();
  cx.restore();
 }
  // particle star
