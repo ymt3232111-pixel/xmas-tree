@@ -276,97 +276,127 @@ function gift([gx,gz,w,d,h,turn,col,rib,y0],q,idx){if(q<=0)return;const c=Math.c
   const tw=.45+.35*Math.sin(now*2.2+i*1.7+idx)**2;
   dot('#ffffff',r[0],r[1],2.2*u,.32*tw);
  }
- if(q>.55){const [bx,by,k]=P3(.5,.5,1,LIDS);const bs=Math.max(w,d)*S*k*(idx%3===1?.31:.29)*back((q-.55)/.45);cx.globalCompositeOperation='source-over';cx.globalAlpha=1;bow(idx%3,bx,by,bs,rib)}
+ if(q>.55){const [bx,by,k]=P3(.5,.5,1,LIDS);const bs=Math.max(w,d)*S*k*(idx%3===1?.37:.35)*back((q-.55)/.45);cx.globalCompositeOperation='source-over';cx.globalAlpha=1;bow(idx%3,bx,by,bs,rib)}
  cx.restore()}
 // 蝴蝶結：三種款式輪流用
-function loop(side,s,colr,variant=0){
- // A sculpted satin ribbon loop: broad outer ribbon with a visible folded opening.
+function ribbonLoop(side,s,colr){
+ // A wide satin ribbon loop with a real open centre. The negative space is
+ // cut out of the fabric, so it reads as a folded strip rather than a petal.
  cx.save();cx.scale(side,1);
- const grad=cx.createLinearGradient(-s*.12,-s*.78,s*.12,s*.5);
- grad.addColorStop(0,shade(colr,1.58));
- grad.addColorStop(.22,shade(colr,1.28));
- grad.addColorStop(.48,shade(colr,.92));
- grad.addColorStop(.72,shade(colr,1.18));
- grad.addColorStop(1,shade(colr,.68));
- cx.fillStyle=grad;
+ const outer=cx.createLinearGradient(-s*.12,-s*.78,s*.22,s*.38);
+ outer.addColorStop(0,shade(colr,1.48));
+ outer.addColorStop(.2,shade(colr,1.28));
+ outer.addColorStop(.46,shade(colr,.78));
+ outer.addColorStop(.68,shade(colr,1.22));
+ outer.addColorStop(1,shade(colr,.72));
+ cx.fillStyle=outer;
  cx.beginPath();
- cx.moveTo(0,0);
- cx.bezierCurveTo(-s*.10,-s*.34,-s*.44,-s*.94,-s*.94,-s*.78);
- cx.bezierCurveTo(-s*1.28,-s*.66,-s*1.23,-s*.12,-s*.91,s*.02);
- cx.bezierCurveTo(-s*.62,s*.18,-s*.25,s*.14,0,s*.07);
- cx.closePath();cx.fill();
- // Dark inner fold gives the loop depth and makes it read as a ribbon, not a petal.
- cx.beginPath();
- cx.moveTo(-s*.17,-s*.13);
- cx.bezierCurveTo(-s*.40,-s*.34,-s*.76,-s*.66,-s*.91,-s*.54);
- cx.bezierCurveTo(-s*.98,-s*.43,-s*.78,-s*.22,-s*.58,-s*.16);
- cx.bezierCurveTo(-s*.39,-s*.10,-s*.25,-s*.08,-s*.17,-s*.13);
+ cx.moveTo(-s*.055,s*.045);
+ cx.bezierCurveTo(-s*.22,-s*.18,-s*.53,-s*.78,-s*.91,-s*.68);
+ cx.bezierCurveTo(-s*1.16,-s*.62,-s*1.12,-s*.23,-s*.88,-s*.035);
+ cx.bezierCurveTo(-s*.62,s*.18,-s*.28,s*.16,-s*.055,s*.085);
  cx.closePath();
- cx.fillStyle=shade(colr,.48);cx.globalAlpha=.48;cx.fill();cx.globalAlpha=1;
- // Long satin highlight follows the upper fold.
- cx.strokeStyle='rgba(255,255,255,.78)';
- cx.lineWidth=Math.max(.7,s*.045);cx.lineCap='round';
- cx.beginPath();
- cx.moveTo(-s*.18,-s*.22);
- cx.bezierCurveTo(-s*.43,-s*.61,-s*.78,-s*.83,-s*.99,-s*.65);
- cx.stroke();
- // Fine lower edge reflection.
- cx.strokeStyle='rgba(255,255,255,.34)';cx.lineWidth=Math.max(.55,s*.025);
- cx.beginPath();cx.moveTo(-s*.91,-s*.04);
- cx.bezierCurveTo(-s*.62,s*.10,-s*.30,s*.08,-s*.12,s*.02);cx.stroke();
+ // open loop aperture
+ cx.moveTo(-s*.24,-s*.075);
+ cx.bezierCurveTo(-s*.43,-s*.28,-s*.68,-s*.58,-s*.86,-s*.51);
+ cx.bezierCurveTo(-s*.93,-s*.43,-s*.75,-s*.19,-s*.56,-s*.095);
+ cx.bezierCurveTo(-s*.42,-s*.02,-s*.31,-s*.025,-s*.24,-s*.075);
+ cx.closePath();
+ cx.fill('evenodd');
+
+ // Dark inner fold: gives the ribbon a rolled, tucked-under edge.
+ const shadeFold=cx.createLinearGradient(-s*.8,-s*.42,-s*.2,s*.08);
+ shadeFold.addColorStop(0,'rgba(30,18,45,.5)');
+ shadeFold.addColorStop(.5,'rgba(30,18,45,.17)');
+ shadeFold.addColorStop(1,'rgba(255,255,255,.05)');
+ cx.fillStyle=shadeFold;cx.beginPath();
+ cx.moveTo(-s*.22,-s*.08);
+ cx.bezierCurveTo(-s*.42,-s*.24,-s*.63,-s*.48,-s*.82,-s*.48);
+ cx.bezierCurveTo(-s*.68,-s*.34,-s*.48,-s*.18,-s*.3,-s*.045);
+ cx.closePath();cx.fill();
+
+ // Broad satin reflection across the upper fold, not a sticker-like outline.
+ const silk=cx.createLinearGradient(-s*.92,-s*.72,-s*.3,-s*.02);
+ silk.addColorStop(0,'rgba(255,255,255,.72)');
+ silk.addColorStop(.42,'rgba(255,255,255,.25)');
+ silk.addColorStop(1,'rgba(255,255,255,0)');
+ cx.fillStyle=silk;cx.beginPath();
+ cx.moveTo(-s*.13,-s*.12);
+ cx.bezierCurveTo(-s*.36,-s*.48,-s*.69,-s*.72,-s*.91,-s*.61);
+ cx.bezierCurveTo(-s*.72,-s*.58,-s*.48,-s*.36,-s*.25,-s*.08);
+ cx.closePath();cx.fill();
+
+ // Two fine curved creases show the fabric turning back toward the knot.
+ cx.strokeStyle='rgba(255,255,255,.35)';cx.lineWidth=Math.max(.55,s*.028);
+ cx.beginPath();cx.moveTo(-s*.16,-s*.12);
+ cx.bezierCurveTo(-s*.35,-s*.42,-s*.66,-s*.61,-s*.86,-s*.58);cx.stroke();
+ cx.strokeStyle='rgba(48,28,52,.3)';cx.lineWidth=Math.max(.6,s*.04);
+ cx.beginPath();cx.moveTo(-s*.16,s*.045);
+ cx.quadraticCurveTo(-s*.45,s*.16,-s*.76,-s*.015);cx.stroke();
  cx.restore();
 }
-function tailRibbon(x0,y0,x1,y1,wid,colr,flip=1){
- const dx=x1-x0,dy=y1-y0,ang=Math.atan2(dy,dx);
- const len=Math.hypot(dx,dy);
- cx.save();cx.translate(x0,y0);cx.rotate(ang);
- const g=cx.createLinearGradient(0,-wid,0,wid);
- g.addColorStop(0,shade(colr,1.42));g.addColorStop(.34,shade(colr,1.12));
- g.addColorStop(.7,shade(colr,.82));g.addColorStop(1,shade(colr,.62));
+function ribbonTail(side,s,colr){
+ // A pair of broad, soft tails that emerge from beneath the centre knot.
+ cx.save();cx.scale(side,1);
+ const g=cx.createLinearGradient(-s*.12,0,s*.2,s*.82);
+ g.addColorStop(0,shade(colr,1.3));g.addColorStop(.32,shade(colr,1.08));
+ g.addColorStop(.68,shade(colr,.76));g.addColorStop(1,shade(colr,.62));
  cx.fillStyle=g;cx.beginPath();
- cx.moveTo(0,-wid*.38);
- cx.bezierCurveTo(len*.26,-wid*.62,len*.7,-wid*.5,len,-wid*.22);
- cx.lineTo(len-wid*.24,0);cx.lineTo(len,wid*.34);
- cx.bezierCurveTo(len*.66,wid*.55,len*.28,wid*.56,0,wid*.38);
+ cx.moveTo(s*.035,s*.035);
+ cx.bezierCurveTo(s*.18,s*.16,s*.3,s*.47,s*.38,s*.78);
+ cx.lineTo(s*.18,s*.68);
+ cx.lineTo(s*.06,s*.82);
+ cx.bezierCurveTo(s*.015,s*.55,-s*.04,s*.25,-s*.035,s*.08);
  cx.closePath();cx.fill();
- // Tail's folded V-cut end.
- cx.fillStyle=shade(colr,.58);cx.globalAlpha=.52;
- cx.beginPath();cx.moveTo(len-wid*.24,0);cx.lineTo(len,wid*.34);
- cx.lineTo(len-wid*.32,wid*.13);cx.closePath();cx.fill();cx.globalAlpha=1;
- cx.strokeStyle='rgba(255,255,255,.62)';cx.lineWidth=Math.max(.6,wid*.055);
- cx.beginPath();cx.moveTo(len*.08,-wid*.17);
- cx.quadraticCurveTo(len*.55,-wid*.32,len*.88,-wid*.1);cx.stroke();
+ // A narrow folded edge and a soft lengthwise satin highlight.
+ cx.strokeStyle='rgba(255,255,255,.46)';cx.lineWidth=Math.max(.55,s*.035);
+ cx.beginPath();cx.moveTo(s*.08,s*.12);
+ cx.quadraticCurveTo(s*.24,s*.42,s*.31,s*.69);cx.stroke();
+ cx.strokeStyle='rgba(45,25,50,.22)';cx.lineWidth=Math.max(.6,s*.04);
+ cx.beginPath();cx.moveTo(s*.01,s*.1);
+ cx.quadraticCurveTo(s*.08,s*.43,s*.18,s*.7);cx.stroke();
  cx.restore();
 }
 function bow(style,x,y,s,colr){
- // s now follows the gift's width: the bow occupies roughly two-thirds of the lid.
- cx.save();cx.translate(x,y-s*.02);
+ // Seat the bow into the ribbon cross on the lid with a small contact shadow.
+ cx.save();cx.translate(x,y);
  cx.globalCompositeOperation='source-over';
- cx.shadowColor='rgba(0,0,0,.2)';cx.shadowBlur=2;cx.shadowOffsetY=1;
- // Back tails first, with a little separation so they remain readable at small sizes.
- tailRibbon(-s*.10,s*.02,-s*.42,s*.94,s*.20,colr);
- tailRibbon(s*.10,s*.02,s*.45,s*.88,s*.20,colr);
- // Two large folded satin loops, angled slightly upward like a luxury gift bow.
- loop(1,s,colr,style);
- loop(-1,s*.96,colr,style);
- // Optional fine secondary folds give the three variants a little personality,
- // while preserving the same recognisable luxury bow silhouette.
- if(style===1){
-  cx.globalAlpha=.72;
-  cx.strokeStyle='rgba(255,255,255,.62)';cx.lineWidth=Math.max(.6,s*.035);
-  cx.beginPath();cx.moveTo(-s*.18,-s*.12);cx.quadraticCurveTo(-s*.58,-s*.5,-s*.9,-s*.53);cx.stroke();
-  cx.beginPath();cx.moveTo(s*.18,-s*.12);cx.quadraticCurveTo(s*.58,-s*.5,s*.9,-s*.53);cx.stroke();
-  cx.globalAlpha=1;
- }
- // Centre knot: a plump wrapped satin band with a narrow centre crease.
- const kg=cx.createLinearGradient(-s*.18,-s*.18,s*.18,s*.18);
- kg.addColorStop(0,shade(colr,1.62));kg.addColorStop(.32,shade(colr,1.22));
- kg.addColorStop(.68,shade(colr,.86));kg.addColorStop(1,shade(colr,.58));
- cx.fillStyle=kg;cx.beginPath();cx.ellipse(0,0,s*.19,s*.145,-.12,0,TAU);cx.fill();
- cx.strokeStyle='rgba(255,255,255,.76)';cx.lineWidth=Math.max(.7,s*.04);
- cx.beginPath();cx.moveTo(-s*.07,-s*.08);cx.quadraticCurveTo(0,-s*.15,s*.09,-s*.07);cx.stroke();
- cx.strokeStyle='rgba(60,35,60,.24)';cx.lineWidth=Math.max(.6,s*.03);
- cx.beginPath();cx.moveTo(0,-s*.1);cx.lineTo(0,s*.1);cx.stroke();
+ cx.globalAlpha=.2;cx.fillStyle='#091225';
+ cx.shadowColor='rgba(0,0,0,.28)';cx.shadowBlur=Math.max(1,s*.16);
+ cx.beginPath();cx.ellipse(0,s*.06,s*.43,s*.12,-.04,0,TAU);cx.fill();
+ cx.shadowBlur=0;cx.globalAlpha=1;
+
+ // Short satin bridge connects the lid's ribbon cross to the knot.
+ const bridge=cx.createLinearGradient(-s*.1,0,s*.1,s*.2);
+ bridge.addColorStop(0,shade(colr,.7));bridge.addColorStop(.42,shade(colr,1.2));bridge.addColorStop(1,shade(colr,.76));
+ cx.fillStyle=bridge;cx.beginPath();
+ cx.moveTo(-s*.11,s*.1);cx.quadraticCurveTo(-s*.14,s*.015,-s*.09,-s*.09);
+ cx.lineTo(s*.09,-s*.09);cx.quadraticCurveTo(s*.14,s*.015,s*.11,s*.1);cx.closePath();cx.fill();
+
+ // Tails sit behind the loops and visibly emerge from the centre.
+ ribbonTail(-1,s,colr);ribbonTail(1,s*.94,colr);
+
+ // Back loop and front loop overlap at the knot like a real tied ribbon.
+ cx.save();cx.translate(0,-s*.02);cx.rotate(-.035);ribbonLoop(1,s,colr);cx.restore();
+ cx.save();cx.translate(0,s*.015);cx.rotate(.025);ribbonLoop(-1,s*.96,colr);cx.restore();
+
+ // Soft, plump centre knot: a wrapped band with a highlight and a shaded fold.
+ const knot=cx.createLinearGradient(-s*.18,-s*.16,s*.18,s*.17);
+ knot.addColorStop(0,shade(colr,1.52));
+ knot.addColorStop(.22,shade(colr,1.25));
+ knot.addColorStop(.5,shade(colr,.88));
+ knot.addColorStop(.78,shade(colr,1.18));
+ knot.addColorStop(1,shade(colr,.66));
+ cx.fillStyle=knot;cx.beginPath();
+ cx.moveTo(-s*.18,-s*.11);
+ cx.bezierCurveTo(-s*.22,-s*.015,-s*.14,s*.12,0,s*.145);
+ cx.bezierCurveTo(s*.15,s*.12,s*.21,-s*.015,s*.16,-s*.11);
+ cx.bezierCurveTo(s*.07,-s*.18,-s*.08,-s*.18,-s*.18,-s*.11);
+ cx.closePath();cx.fill();
+ cx.strokeStyle='rgba(255,255,255,.62)';cx.lineWidth=Math.max(.6,s*.032);
+ cx.beginPath();cx.moveTo(-s*.09,-s*.105);cx.quadraticCurveTo(-s*.15,-s*.005,-s*.055,s*.075);cx.stroke();
+ cx.strokeStyle='rgba(45,25,50,.24)';cx.lineWidth=Math.max(.55,s*.03);
+ cx.beginPath();cx.moveTo(s*.075,-s*.105);cx.quadraticCurveTo(s*.15,-s*.01,s*.07,s*.09);cx.stroke();
  cx.restore();
 }
  // particle star
