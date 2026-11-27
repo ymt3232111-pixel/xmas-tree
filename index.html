@@ -105,7 +105,7 @@ for(let i=0;i<360;i++){const u=i/360;const y=.17+u*.8;const r=surfR(y)*.96+.012;
 const oc=['#ff3b55','#ffc94a','#ff3b55','#bfe6ff','#ff7ab0'];
 for(let i=0;i<56;i++){const tier=(R()*TIERS)|0;const y=tierBot(tier)+.012+R()*.02;const r=tierR(tier)*.93;const a=R()*TAU;orns.push({x:Math.cos(a)*r,y,z:Math.sin(a)*r,d:R()*.6,c:oc[i%oc.length],s:1.7+R()*1.2})}
 // gifts: solid boxes, irregular sizes and turns; [x,z,w,d,h,turn,colour,ribbon,y0,delay]
-const GIFTS=[[-.33,.0,.16,.14,.12,.38,'#ff5a6e','#ffd36b',0,.05],[-.31,-.02,.08,.08,.07,-.25,'#7fb2ff','#fff4e6',.12,.45],[-.26,-.16,.12,.11,.09,-.18,'#4fe39a','#ffd36b',0,.2],[-.1,-.3,.1,.09,.06,.3,'#ff8cc0','#fff4e6',0,.35],[.04,-.33,.15,.1,.07,.1,'#ffd36b','#ff5a6e',0,.3],[.2,-.28,.09,.1,.13,-.5,'#b59bff','#ffd36b',0,.42],[.31,-.14,.15,.14,.16,-.42,'#ff8cc0','#fff4e6',0,.12],[.46,.04,.1,.1,.08,.7,'#4fe39a','#ff5a6e',0,.38],[.38,.2,.12,.1,.1,.2,'#ff5a6e','#fff4e6',0,.25],[-.18,-.05,.11,.1,.14,.55,'#fff4e6','#ff5a6e',0,.5],[.12,-.12,.12,.12,.1,-.1,'#7fb2ff','#ffd36b',0,.15],[-.27,.16,.11,.12,.09,-.6,'#ffd36b','#4fe39a',0,.28],[-.02,-.42,.07,.07,.05,.8,'#ff5a6e','#ffd36b',0,.55],[.31,-.14,.07,.07,.06,.3,'#4fe39a','#ffd36b',.16,.6],[-.22,-.38,.12,.1,.08,.25,'#7fb2ff','#ff5a6e',0,.33],[-.03,-.17,.13,.11,.11,-.3,'#b59bff','#fff4e6',0,.18],[.12,-.46,.09,.08,.06,-.2,'#4fe39a','#fff4e6',0,.48],[-.4,-.2,.1,.09,.08,.15,'#ff8cc0','#ffd36b',0,.22]];
+const GIFTS=[[-.33,.0,.16,.14,.12,.38,'#ff5a6e','#ffd36b',0,.05],[-.31,-.02,.08,.08,.07,-.25,'#7fb2ff','#fff4e6',.12,.45],[-.26,-.16,.12,.11,.09,-.18,'#4fe39a','#ffd36b',0,.2],[-.1,-.3,.1,.09,.06,.3,'#ff8cc0','#fff4e6',0,.35],[.04,-.33,.15,.1,.07,.1,'#ffd36b','#ff5a6e',0,.3],[.2,-.28,.09,.1,.13,-.5,'#b59bff','#ffd36b',0,.42],[.31,-.14,.15,.14,.16,-.42,'#ff8cc0','#fff4e6',0,.12],[.46,.04,.1,.1,.08,.7,'#4fe39a','#ff5a6e',0,.38],[.38,.2,.12,.1,.1,.2,'#ff5a6e','#fff4e6',0,.25],[-.18,-.05,.11,.1,.14,.55,'#fff4e6','#ff5a6e',0,.5],[.12,-.12,.12,.12,.1,-.1,'#7fb2ff','#ffd36b',0,.15],[-.27,.16,.11,.12,.09,-.6,'#ffd36b','#4fe39a',0,.28],[-.02,-.42,.07,.07,.05,.8,'#ff5a6e','#ffd36b',0,.55],[.31,-.14,.07,.07,.06,.3,'#4fe39a','#ffd36b',.1728,.6],[-.22,-.38,.12,.1,.08,.25,'#7fb2ff','#ff5a6e',0,.33],[-.03,-.17,.13,.11,.11,-.3,'#b59bff','#fff4e6',0,.18],[.12,-.46,.09,.08,.06,-.2,'#4fe39a','#fff4e6',0,.48],[-.4,-.2,.1,.09,.08,.15,'#ff8cc0','#ffd36b',0,.22]];
 // stockings hang on the front edges of the tiers
 const SOCKS=[[-.95,1,.5,'#ff4a5f'],[.85,2,.2,'#ff4a5f'],[-.8,3,.65,'#ff4a5f'],[.7,4,.35,'#ff4a5f'],[-.45,5,.8,'#ff4a5f']];
 // star: particles along a 5-point outline and inside, in screen space
@@ -162,7 +162,10 @@ function frame(ms){
  // stockings
  for(const [si,[a0,tier,dl,col]] of SOCKS.entries()){const q=back((P[3]-dl*.6)/.3);if(q<=0)continue;const y=(tierTop(tier)+tierBot(tier))/2+.01,r=surfR(y)*.82;const a=a0-ang+Math.PI*1.5;const [X,Y,k,Z]=proj(Math.cos(a)*r,y,Math.sin(a)*r);if(Z>.1)continue;sock(X,Y,14*u*k*q,col,Math.sin(now*1.4+a0)*.06,a0>0?-1:1,si)}
  // gifts, back to front
- GIFTS.map((g,i)=>{const c=proj(g[0],0,g[1]);return [c[3],g,i]}).sort((a,b)=>b[0]-a[0]).forEach(([,g,i])=>gift(g,ease((P[3]-g[9]*.6)/.35),i));
+ GIFTS.map((g,i)=>{const c=proj(g[0],0,g[1]);return [c[3],g,i]})
+ // 先按水平深度由後往前；同一深度時，底層禮物先畫、高處的小禮物後畫
+ .sort((a,b)=>(b[0]-a[0]) || (a[1][8]-b[1][8]))
+ .forEach(([,g,i])=>gift(g,ease((P[3]-g[9]*.6)/.35),i));
 
 function shade(hex,m){const n=parseInt(hex.slice(1),16);const ch=[n>>16,n>>8&255,n&255].map(v=>Math.max(0,Math.min(255,Math.round(m>1?v+(255-v)*(m-1):v*m))));return `rgb(${ch})`}
 function star5(x,y,r){cx.beginPath();for(let i=0;i<10;i++){const a=-Math.PI/2+i*Math.PI/5,rr=i%2?r*.45:r;cx.lineTo(x+Math.cos(a)*rr,y+Math.sin(a)*rr)}cx.closePath()}
