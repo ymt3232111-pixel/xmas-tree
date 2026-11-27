@@ -139,8 +139,8 @@ function size(){dpr=Math.min(2,devicePixelRatio||1);W=cv.clientWidth;H=cv.client
 const ro=new ResizeObserver(size);ro.observe(cv);size();
 const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-const SOCKP=new Path2D('M-3.6 2 L3.6 2 L3.6 11 Q3.6 14 7 14.2 Q10.5 14.6 10.2 17.4 Q9.6 20 5.6 19.6 L-.6 19.2 Q-3.6 18.8 -3.6 15.5 Z');
-const CUFF=new Path2D('M-4.4 -.4 h8.8 a1.4 1.4 0 0 1 0 4.4 h-8.8 a1.4 1.4 0 0 1 0 -4.4 Z');
+const SOCKP=new Path2D('M-4.6 1 L4.6 1 Q5 1 5 2 L5 10.5 Q5.2 13 8 13.4 Q12.2 14 12 17.6 Q11.8 21.4 7.4 21.4 L-.6 21.4 Q-5.4 21.4 -5.4 16.6 L-5.4 2 Q-5.4 1 -4.6 1 Z');   // 胖胖圓圓的襪子
+const CUFF=new Path2D('M-5.6 -1.6 h11.2 a2.4 2.4 0 0 1 0 4.8 h-11.2 a2.4 2.4 0 0 1 0 -4.8 Z');
 function frame(ms){
  const now=ms/1000,P=progress(now);
  if(fpsN>=0){if(!fpsT)fpsT=ms;fpsN++;if(ms-fpsT>2500){if(fpsN/((ms-fpsT)/1000)<40)lite=true;fpsN=-1}}
@@ -160,31 +160,89 @@ function frame(ms){
  for(const p of lights){if(p.u>P[2])continue;const [X,Y,k,Z]=proj(p.x,p.y,p.z);const tw=.55+.45*Math.sin(now*3+p.ph);const head=P[2]<1&&P[2]-p.u<.02;dot(p.c,X,Y,(head?22:9)*k*u*(.8+.4*tw),(.85-Z*.8)*tw)}
  for(const p of orns){const q=back((P[3]-p.d)/.25);if(q<=0)continue;const [X,Y,k,Z]=proj(p.x,p.y,p.z);dot(p.c,X,Y,12*p.s*k*u*q,(.85-Z*.7));dot('#ffffff',X-1.5*u,Y-1.5*u,4*k*u*q,.6-Z*.5)}
  // stockings
- for(const [a0,tier,dl,col] of SOCKS){const q=back((P[3]-dl*.6)/.3);if(q<=0)continue;const y=(tierTop(tier)+tierBot(tier))/2+.01,r=surfR(y)*.82;const a=a0-ang+Math.PI*1.5;const [X,Y,k,Z]=proj(Math.cos(a)*r,y,Math.sin(a)*r);if(Z>.1)continue;sock(X,Y,13*u*k*q,col,Math.sin(now*1.4+a0)*.06,a0>0?-1:1)}
+ for(const [si,[a0,tier,dl,col]] of SOCKS.entries()){const q=back((P[3]-dl*.6)/.3);if(q<=0)continue;const y=(tierTop(tier)+tierBot(tier))/2+.01,r=surfR(y)*.82;const a=a0-ang+Math.PI*1.5;const [X,Y,k,Z]=proj(Math.cos(a)*r,y,Math.sin(a)*r);if(Z>.1)continue;sock(X,Y,14*u*k*q,col,Math.sin(now*1.4+a0)*.06,a0>0?-1:1,si)}
  // gifts, back to front
- GIFTS.map(g=>{const c=proj(g[0],0,g[1]);return [c[3],g]}).sort((a,b)=>b[0]-a[0]).forEach(([,g])=>gift(g,ease((P[3]-g[9]*.6)/.35)));
+ GIFTS.map((g,i)=>{const c=proj(g[0],0,g[1]);return [c[3],g,i]}).sort((a,b)=>b[0]-a[0]).forEach(([,g,i])=>gift(g,ease((P[3]-g[9]*.6)/.35),i));
 
 function shade(hex,m){const n=parseInt(hex.slice(1),16);const ch=[n>>16,n>>8&255,n&255].map(v=>Math.max(0,Math.min(255,Math.round(m>1?v+(255-v)*(m-1):v*m))));return `rgb(${ch})`}
-function sock(X,Y,sz,col,sw,fl=1){const m=sz/10;cx.save();cx.globalCompositeOperation='lighter';cx.globalAlpha=.16;cx.drawImage(sprite(col),X-sz*1.4,Y-sz*.2,sz*3,sz*3);cx.restore();
+function star5(x,y,r){cx.beginPath();for(let i=0;i<10;i++){const a=-Math.PI/2+i*Math.PI/5,rr=i%2?r*.45:r;cx.lineTo(x+Math.cos(a)*rr,y+Math.sin(a)*rr)}cx.closePath()}
+function goodie(kind){// 襪口探出來的小東西：拐杖糖、棒棒糖、松枝莓果
+ cx.lineCap='round';
+ if(kind===0){cx.lineWidth=1.7;cx.strokeStyle='#fdf7f2';cx.beginPath();cx.moveTo(2.2,1);cx.lineTo(2.2,-6.5);cx.arc(.2,-6.5,2,0,Math.PI,true);cx.stroke();
+  cx.strokeStyle='#e8283f';cx.setLineDash([.9,1.1]);cx.stroke();cx.setLineDash([])}
+ else if(kind===1){cx.lineWidth=.8;cx.strokeStyle='#f4ede4';cx.beginPath();cx.moveTo(-1.2,1);cx.lineTo(-1.8,-5);cx.stroke();
+  cx.fillStyle='#fdf7f2';cx.beginPath();cx.arc(-1.9,-7.6,3.1,0,TAU);cx.fill();cx.strokeStyle='#e8283f';cx.lineWidth=.95;cx.beginPath();
+  for(let t=0;t<3.1*TAU/2.3;t+=.15){const r=.25+t*.36;cx.lineTo(-1.9+Math.cos(t)*r,-7.6+Math.sin(t)*r)}cx.stroke()}
+ else{cx.strokeStyle='#2f8a4e';cx.lineWidth=.55;for(const [bx,by,ang] of [[-2.6,-3.6,-2.2],[1.8,-3.9,-.9],[-.3,-4.6,-1.6]]){for(let j=0;j<7;j++){const t=j/6,x0=bx*t,y0=by*t;cx.beginPath();cx.moveTo(x0,y0);cx.lineTo(x0+Math.cos(ang-.8)*1.3,y0+Math.sin(ang-.8)*1.3);cx.moveTo(x0,y0);cx.lineTo(x0+Math.cos(ang+.8)*1.3,y0+Math.sin(ang+.8)*1.3);cx.stroke()}}
+  for(const [x,y,cl] of [[-1,-3,'#e8283f'],[.3,-3.6,'#e8283f'],[1.2,-2.7,'#fdf7f2'],[-1.9,-2.2,'#fdf7f2']]){cx.fillStyle=cl;cx.beginPath();cx.arc(x,y,.62,0,TAU);cx.fill()}}}
+function sock(X,Y,sz,col,sw,fl=1,kind=0){const m=sz/10;
+ cx.save();cx.globalCompositeOperation='lighter';cx.globalAlpha=.14;cx.drawImage(sprite(col),X-sz*1.3,Y-sz*.2,sz*2.8,sz*2.8);cx.restore();
  cx.save();cx.translate(X,Y);cx.rotate(sw);cx.scale(m*fl,m);cx.globalCompositeOperation='source-over';cx.globalAlpha=1;
- const g=cx.createLinearGradient(-4,0,10,18);g.addColorStop(0,'#e63a50');g.addColorStop(1,'#9e1428');cx.fillStyle=g;cx.fill(SOCKP);
- cx.fillStyle='rgba(255,255,255,.18)';cx.fillRect(-2.6,3.5,1.2,9);
- cx.globalCompositeOperation='lighter';cx.shadowColor='#ff6a7c';cx.shadowBlur=6;cx.strokeStyle='rgba(255,140,155,.75)';cx.lineWidth=.9;cx.lineJoin='round';cx.stroke(SOCKP);
- cx.globalCompositeOperation='source-over';cx.shadowBlur=4;cx.shadowColor='#fff';cx.fillStyle='#fbf4ea';cx.fill(CUFF);cx.restore()}
-function gift([gx,gz,w,d,h,turn,col,rib,y0],q){if(q<=0)return;const c=Math.cos(turn),s_=Math.sin(turn);
- const P3=(u_,v,yy)=>{const lx=(u_-.5)*w,lz=(v-.5)*d;return proj(gx+lx*c-lz*s_,y0+yy*h*q,gz+lx*s_+lz*c)};
- const faces=[[[0,0,0],[1,0,0],[1,0,1],[0,0,1],0,.55],[[1,0,0],[1,1,0],[1,1,1],[1,0,1],0,.72],[[1,1,0],[0,1,0],[0,1,1],[1,1,1],0,.55],[[0,1,0],[0,0,0],[0,0,1],[0,1,1],0,.72],[[0,0,1],[1,0,1],[1,1,1],[0,1,1],1,.95]];
- const vis=faces.filter(f=>{if(f[4])return true;const p=f.slice(0,4).map(x=>P3(...x));return (p[1][0]-p[0][0])*(p[2][1]-p[0][1])-(p[1][1]-p[0][1])*(p[2][0]-p[0][0])<0});
- const lerp=(f,a,b)=>[0,1,2].map(i=>{const p0=f[0][i]+(f[1][i]-f[0][i])*a,p1=f[3][i]+(f[2][i]-f[3][i])*a;return p0+(p1-p0)*b});
- const poly=(f,a0,a1,b0,b1)=>{cx.beginPath();[[a0,b0],[a1,b0],[a1,b1],[a0,b1]].forEach(([a,b])=>{const r=P3(...lerp(f,a,b));cx.lineTo(r[0],r[1])});cx.closePath()};
+ // 掛繩
+ cx.strokeStyle='#f6efe6';cx.lineWidth=.6;cx.beginPath();cx.moveTo(-4.2,-1);cx.bezierCurveTo(-6.5,-6.5,-1.5,-7.5,-2.6,-1.2);cx.stroke();
+ goodie(kind%3);
+ // 襪身：漸層＋針織紋（一排排小 V 字）
+ const g=cx.createLinearGradient(-5,0,10,20);g.addColorStop(0,'#e23a4f');g.addColorStop(1,'#a3172b');cx.fillStyle=g;cx.fill(SOCKP);
+ cx.save();cx.clip(SOCKP);cx.strokeStyle='rgba(90,0,15,.38)';cx.lineWidth=.42;
+ for(let x=-4.8;x<12;x+=1.9){cx.beginPath();for(let y=3.4;y<22;y+=1.25){cx.moveTo(x-.75,y);cx.lineTo(x,y+.85);cx.lineTo(x+.75,y)}cx.stroke()}
+ cx.fillStyle='rgba(255,255,255,.12)';cx.beginPath();cx.ellipse(-2.6,9,1.1,5,0,0,TAU);cx.fill();cx.restore();
+ // 柔和光邊
+ cx.globalCompositeOperation='lighter';cx.shadowColor='#ff6a7c';cx.shadowBlur=5;cx.strokeStyle='rgba(255,150,165,.5)';cx.lineWidth=.6;cx.stroke(SOCKP);cx.shadowBlur=0;cx.globalCompositeOperation='source-over';
+ // 小星星貼布
+ star5(1,10.5,2.6);cx.fillStyle='#e9e5ee';cx.fill();cx.strokeStyle='rgba(120,110,140,.5)';cx.lineWidth=.3;cx.setLineDash([.5,.5]);cx.stroke();cx.setLineDash([]);
+ // 毛茸茸的白色襪口：圓角長條＋邊緣一圈小圓球
+ cx.fillStyle='#fbf6ee';cx.shadowColor='rgba(0,0,0,.25)';cx.shadowBlur=2;cx.shadowOffsetY=.4;cx.fill(CUFF);cx.shadowBlur=0;cx.shadowOffsetY=0;
+ for(let x=-5.4;x<=5.4;x+=1.35){for(const y of [-1.6,3.2]){cx.beginPath();cx.arc(x,y,.85,0,TAU);cx.fill()}}
+ cx.fillStyle='rgba(200,190,180,.55)';for(let x=-4.6;x<=4.6;x+=1.5)for(let y=-.4;y<=2.2;y+=1.3){cx.beginPath();cx.arc(x+((y*10|0)%2)*.7,y,.28,0,TAU);cx.fill()}
+ cx.restore()}
+function gift([gx,gz,w,d,h,turn,col,rib,y0],q,idx){if(q<=0)return;const c=Math.cos(turn),s_=Math.sin(turn);
+ // 盒子＝盒身＋蓋子兩層：蓋子比盒身大一圈、蓋住上緣，中間有一道陰影縫
+ const HB=.76,LID0=.7,LIDS=1.08;
+ const P3=(u_,v,yy,sc=1)=>{const lx=(u_-.5)*w*sc,lz=(v-.5)*d*sc;return proj(gx+lx*c-lz*s_,y0+yy*h*q,gz+lx*s_+lz*c)};
+ const FACES=[[[0,0,0],[1,0,0],[1,0,1],[0,0,1],0,.58],[[1,0,0],[1,1,0],[1,1,1],[1,0,1],0,.76],[[1,1,0],[0,1,0],[0,1,1],[1,1,1],0,.58],[[0,1,0],[0,0,0],[0,0,1],[0,1,1],0,.76]];
+ const quad=(pts)=>{cx.beginPath();pts.forEach(r=>cx.lineTo(r[0],r[1]));cx.closePath()};
+ // 畫一個立方體：sc 放大倍率，ya~yb 高度範圍（0~1）
+ function box(sc,ya,yb,base,light,band){
+  const at=(p,a,b)=>{const u_=p[0][0]+(p[1][0]-p[0][0])*a,v=p[0][1]+(p[1][1]-p[0][1])*a;return [u_,v]};
+  const sides=FACES.filter(f=>{const p=f.slice(0,4).map(x=>P3(x[0],x[1],ya+(yb-ya)*x[2],sc));return (p[1][0]-p[0][0])*(p[2][1]-p[0][1])-(p[1][1]-p[0][1])*(p[2][0]-p[0][0])<0});
+  for(const f of sides){const [A,B]=[f[0],f[1]];const Y=(a,y)=>{const [u_,v]=at([A,B],a);return P3(u_,v,y,sc)};
+   quad([Y(0,ya),Y(1,ya),Y(1,yb),Y(0,yb)]);const g0=Y(0,ya),g1=Y(0,yb);const gr=cx.createLinearGradient(g0[0],g0[1],g1[0],g1[1]);gr.addColorStop(0,shade(base,f[5]*.72*light));gr.addColorStop(1,shade(base,f[5]*.95*light));cx.fillStyle=gr;cx.fill();
+   cx.fillStyle=shade(rib,f[5]*1.02);quad([Y(.43,ya),Y(.57,ya),Y(.57,yb),Y(.43,yb)]);cx.fill();
+   if(band){cx.fillStyle='rgba(0,0,0,.35)';quad([Y(0,yb-.05),Y(1,yb-.05),Y(1,yb),Y(0,yb)]);cx.fill()}}
+  // 頂面
+  const T=(u_,v)=>P3(u_,v,yb,sc);quad([T(0,0),T(1,0),T(1,1),T(0,1)]);cx.fillStyle=shade(base,1.06*light);cx.fill();
+  cx.fillStyle=shade(rib,1.12);quad([T(.43,0),T(.57,0),T(.57,1),T(.43,1)]);cx.fill();quad([T(0,.43),T(1,.43),T(1,.57),T(0,.57)]);cx.fill();
+  return sides}
  cx.save();cx.globalAlpha=Math.min(1,q*1.5);cx.globalCompositeOperation='source-over';
- for(const f of vis){poly(f,0,1,0,1);cx.fillStyle=shade(col,f[5]*.8);cx.fill();const rb=shade(rib,f[5]);cx.fillStyle=rb;poly(f,.42,.58,0,1);cx.fill();if(f[4]){poly(f,0,1,.42,.58);cx.fill()}}
- // glowing edges
- cx.globalCompositeOperation='lighter';cx.shadowBlur=6;cx.shadowColor=col;cx.strokeStyle=shade(col,1.35);cx.lineWidth=1;cx.lineJoin='round';cx.globalAlpha=.55*Math.min(1,q*1.5);
- for(const f of vis){poly(f,0,1,0,1);cx.stroke()}
- if(q>.6){const [bx,by,k]=P3(.5,.5,1);const bs=Math.min(w,d)*S*k*.34*ease((q-.6)/.4);cx.globalCompositeOperation='source-over';cx.globalAlpha=1;cx.shadowBlur=5;cx.shadowColor=rib;cx.fillStyle=shade(rib,1);
-  for(const sg of [-1,1]){cx.beginPath();cx.ellipse(bx+sg*bs*.55,by-bs*.32,bs*.58,bs*.32,sg*-.5,0,TAU);cx.fill()}cx.fillStyle=shade(rib,.75);cx.beginPath();cx.arc(bx,by-bs*.18,bs*.22,0,TAU);cx.fill();
-  cx.shadowBlur=0;cx.globalCompositeOperation='lighter';const tw=.5+.5*Math.sin(now*3+gx*20);dot('#fff1c9',bx,by-bs*.2,bs*1.8*(.7+.5*tw),.55*tw)}
+ box(1,0,HB,col,1,true);                 // 盒身（上緣有蓋子投下的陰影）
+ const lidSides=box(LIDS,LID0,1,col,1.12,false);   // 蓋子：大一圈、顏色稍亮
+ // 蓋子下緣的細亮邊，讓兩層分得更清楚
+ cx.globalCompositeOperation='lighter';cx.strokeStyle=shade(col,1.5);cx.globalAlpha=.35*Math.min(1,q*1.5);cx.lineWidth=1;
+ for(const f of lidSides){const a=P3(f[0][0],f[0][1],LID0,LIDS),b=P3(f[1][0],f[1][1],LID0,LIDS);cx.beginPath();cx.moveTo(a[0],a[1]);cx.lineTo(b[0],b[1]);cx.stroke()}
+ // 蓋子上的閃粉
+ for(let i=0;i<5;i++){const uu=.15+.7*((idx*.37+i*.29)%1),vv=.15+.7*((idx*.53+i*.41)%1);const r=P3(uu,vv,1,LIDS);const tw=.5+.5*Math.sin(now*3.3+i*2.1+idx);dot('#ffffff',r[0],r[1],5*u*(.4+tw),.5*tw)}
+ if(q>.55){const [bx,by,k]=P3(.5,.5,1,LIDS);const bs=Math.min(w,d)*S*k*.42*back((q-.55)/.45);cx.globalCompositeOperation='source-over';cx.globalAlpha=1;bow(idx%3,bx,by,bs,rib)}
+ cx.restore()}
+// 蝴蝶結：三種款式輪流用
+function loop(len,wid,ang,colr,m=1){ // 一個水滴形的緞帶圈，從中心往 ang 方向伸出
+ cx.save();cx.rotate(ang);const g=cx.createLinearGradient(0,-wid,0,wid);g.addColorStop(0,shade(colr,1.25*m));g.addColorStop(.55,shade(colr,.95*m));g.addColorStop(1,shade(colr,.62*m));
+ cx.fillStyle=g;cx.beginPath();cx.moveTo(0,0);cx.bezierCurveTo(len*.35,-wid*1.25,len*1.05,-wid*1.05,len,0);cx.bezierCurveTo(len*1.05,wid*1.05,len*.35,wid*1.25,0,0);cx.fill();
+ cx.fillStyle=shade(colr,.5*m);cx.globalAlpha=.4;cx.beginPath();cx.ellipse(len*.62,0,len*.2,wid*.32,0,0,TAU);cx.fill();cx.globalAlpha=1;   // 圈內的陰影洞
+ cx.strokeStyle='rgba(255,255,255,.45)';cx.lineWidth=Math.max(.6,wid*.08);cx.beginPath();cx.moveTo(len*.15,-wid*.35);cx.quadraticCurveTo(len*.6,-wid*1,len*.92,-wid*.4);cx.stroke();cx.restore()}
+function tail(x0,y0,x1,y1,wid,colr){cx.fillStyle=shade(colr,.85);cx.beginPath();cx.moveTo(x0-wid*.4,y0);cx.quadraticCurveTo((x0+x1)/2+wid,(y0+y1)/2,x1-wid*.5,y1);cx.lineTo(x1,y1-wid*.35);cx.lineTo(x1+wid*.5,y1);cx.quadraticCurveTo((x0+x1)/2+wid*1.6,(y0+y1)/2,x0+wid*.4,y0);cx.fill()}
+function bow(style,x,y,s,colr){cx.save();cx.translate(x,y-s*.08);cx.shadowColor='rgba(0,0,0,.35)';cx.shadowBlur=3;cx.shadowOffsetY=1;
+ if(style===0){// 經典：兩個大圈＋兩條垂下的尾巴
+  tail(0,0,-s*.55,s*.75,s*.22,colr);tail(0,0,s*.6,s*.7,s*.22,colr);
+  loop(s*1.05,s*.42,Math.PI+.35,colr);loop(s*1.05,s*.42,-.35,colr)}
+ else if(style===1){// 繡球：很多圈層層疊起來（像參考圖那種）
+  const n=9;for(let r=0;r<2;r++)for(let i=0;i<n;i++){const a=-Math.PI/2+(i-(n-1)/2)*(Math.PI*1.25/(n-1))+(r?.17:0);loop(s*(r?.72:.95),s*(r?.26:.3),a,colr,r?1.08:.9)}
+  tail(0,0,-s*.75,s*.35,s*.18,colr);tail(0,0,s*.8,s*.4,s*.18,colr)}
+ else{// 捲捲彩帶：小蝴蝶結＋兩條捲曲的緞帶
+  cx.shadowBlur=0;cx.strokeStyle=shade(colr,.95);cx.lineWidth=Math.max(1,s*.09);cx.lineCap='round';
+  for(const sg of [-1,1]){cx.beginPath();cx.moveTo(0,0);for(let t=0;t<=1.001;t+=.04){const r=s*(.2+.75*t),a=sg*(t*TAU*1.15)+(sg<0?Math.PI:0);cx.lineTo(Math.cos(a)*r*.9+sg*s*.25*t,Math.sin(a)*r*.45+s*.45*t)}cx.stroke()}
+  cx.shadowBlur=3;loop(s*.8,s*.34,Math.PI+.5,colr);loop(s*.8,s*.34,-.5,colr);loop(s*.6,s*.28,-Math.PI/2,colr,1.1)}
+ cx.shadowBlur=0;cx.shadowOffsetY=0;cx.fillStyle=shade(colr,.8);cx.beginPath();cx.ellipse(0,0,s*.17,s*.14,0,0,TAU);cx.fill();   // 中間的結
+ cx.fillStyle='rgba(255,255,255,.4)';cx.beginPath();cx.ellipse(-s*.04,-s*.04,s*.07,s*.05,0,0,TAU);cx.fill();
  cx.restore()}
  // particle star
  const ps=back(P[4]*1.5);
