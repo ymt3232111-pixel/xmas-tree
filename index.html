@@ -163,15 +163,23 @@ function frame(ms){
  for(const [si,[a0,tier,dl,col]] of SOCKS.entries()){const q=back((P[3]-dl*.6)/.3);if(q<=0)continue;const y=(tierTop(tier)+tierBot(tier))/2+.01,r=surfR(y)*.82;const a=a0-ang+Math.PI*1.5;const [X,Y,k,Z]=proj(Math.cos(a)*r,y,Math.sin(a)*r);if(Z>.1)continue;sock(X,Y,14*u*k*q,col,Math.sin(now*1.4+a0)*.06,a0>0?-1:1,si)}
  // gifts, back to front
  const stackParent=new Map([[1,0],[13,6]]);
- GIFTS.map((g,i)=>{const c=proj(g[0],0,g[1]);return [c[3],g,i]})
- // 先按場景深度排序；指定堆疊組永遠先畫底盒，再畫正上方的小盒
- .sort((a,b)=>{
-  const [za,ga,ia]=a,[zb,gb,ib]=b;
-  if(stackParent.get(ia)===ib)return 1;
-  if(stackParent.get(ib)===ia)return -1;
-  return (zb-za)||(ga[8]-gb[8]);
- })
- .forEach(([,g,i])=>gift(g,ease((P[3]-g[9]*.6)/.35),i));
+ const giftItems=GIFTS.map((g,i)=>{const c=proj(g[0],0,g[1]);return {depth:c[3],g,i}});
+ // First sort the scene by depth, then move each child immediately after its support box.
+ // This avoids a non-transitive sort comparator accidentally putting a child behind its parent.
+ giftItems.sort((a,b)=>(b.depth-a.depth)||(a.g[8]-b.g[8]));
+ const ordered=[];
+ const emitted=new Set();
+ for(const item of giftItems){
+  if(emitted.has(item.i))continue;
+  ordered.push(item);emitted.add(item.i);
+  for(const child of giftItems){
+   if(stackParent.get(child.i)===item.i&&!emitted.has(child.i)){
+    ordered.push(child);emitted.add(child.i);
+   }
+  }
+ }
+ for(const item of giftItems)if(!emitted.has(item.i))ordered.push(item);
+ ordered.forEach(({g,i})=>gift(g,ease((P[3]-g[9]*.6)/.35),i));
 
 function shade(hex,m){const n=parseInt(hex.slice(1),16);const ch=[n>>16,n>>8&255,n&255].map(v=>Math.max(0,Math.min(255,Math.round(m>1?v+(255-v)*(m-1):v*m))));return `rgb(${ch})`}
 function star5(x,y,r){cx.beginPath();for(let i=0;i<10;i++){const a=-Math.PI/2+i*Math.PI/5,rr=i%2?r*.45:r;cx.lineTo(x+Math.cos(a)*rr,y+Math.sin(a)*rr)}cx.closePath()}
@@ -186,7 +194,11 @@ function goodie(kind){// 襪口探出來的小東西：拐杖糖、棒棒糖、�
   for(const [x,y,cl] of [[-1,-3,'#e8283f'],[.3,-3.6,'#e8283f'],[1.2,-2.7,'#fdf7f2'],[-1.9,-2.2,'#fdf7f2']]){cx.fillStyle=cl;cx.beginPath();cx.arc(x,y,.62,0,TAU);cx.fill()}}}
 function sock(X,Y,sz,col,sw,fl=1,kind=0){
  const m=sz/10;
- cx.save();cx.translate(X,Y);cx.rotate(sw);cx.scale(m*fl,m);
+ cx.save();
+ // The tree particles use additive blending; reset it before drawing the solid sock.
+ cx.globalCompositeOperation='source-over';
+ cx.globalAlpha=1;
+ cx.translate(X,Y);cx.rotate(sw);cx.scale(m*fl,m);
 
  // 掛繩與襪口上方的小糖果／冬青裝飾
  cx.strokeStyle='#f8f0e7';cx.lineWidth=.65;cx.beginPath();
@@ -197,7 +209,7 @@ function sock(X,Y,sz,col,sw,fl=1,kind=0){
  const body=cx.createLinearGradient(-5,1,10,21);
  body.addColorStop(0,'#f05a6b');body.addColorStop(.28,'#cf263f');
  body.addColorStop(.68,'#b51e38');body.addColorStop(1,'#79152d');
- cx.fillStyle=body;cx.shadowColor='rgba(0,0,0,.2)';cx.shadowBlur=1.4;cx.shadowOffsetY=.7;
+ cx.fillStyle=body;cx.globalAlpha=1;cx.shadowColor='rgba(0,0,0,.2)';cx.shadowBlur=1.4;cx.shadowOffsetY=.7;
  cx.fill(SOCKP);cx.shadowBlur=0;cx.shadowOffsetY=0;
 
  // 細密的針織底紋：小段 V 形線，不透明地融入布面
@@ -273,11 +285,11 @@ function sock(X,Y,sz,col,sw,fl=1,kind=0){
   cx.beginPath();cx.moveTo(x,2.95);cx.lineTo(x-wobble,3.65+(.18*Math.sin(x*4)));cx.stroke();
  }
 
- // 微弱輪廓光：只沿襪身與毛絨襪口邊緣，不在背後鋪一團光
- cx.save();cx.globalCompositeOperation='lighter';cx.globalAlpha=.34;
- cx.shadowColor='#ff8b9c';cx.shadowBlur=3.2;
+ // 微弱輪廓光：只有這一小段使用加亮模式；襪身與裝飾始終保持實體不透明
+ cx.save();cx.globalCompositeOperation='lighter';cx.globalAlpha=.22;
+ cx.shadowColor='#ff8b9c';cx.shadowBlur=2.2;
  cx.strokeStyle='rgba(255,190,198,.7)';cx.lineWidth=.55;cx.stroke(SOCKP);
- cx.shadowColor='#fff0e5';cx.shadowBlur=2;
+ cx.shadowColor='#fff0e5';cx.shadowBlur=1.5;
  cx.strokeStyle='rgba(255,248,238,.62)';cx.lineWidth=.5;cx.stroke(CUFF);
  cx.restore();
  cx.restore();
