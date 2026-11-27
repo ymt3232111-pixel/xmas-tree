@@ -159,6 +159,25 @@ function frame(ms){
  for(const p of leaves){if(lite&&(li++%2))continue;const q=ease((P[1]-p.d*.8)/.2);if(q<=0)continue;const x=p.sx+(p.x-p.sx)*q,y=p.sy+(p.y-p.sy)*q,z=p.sz+(p.z-p.sz)*q;const [X,Y,k,Z]=proj(x,y,z);const tw=p.c==='#ffe39a'?.6+.4*Math.sin(now*4+p.x*40):1;dot(p.c,X,Y,(9*p.s*k)*u+1.5,(p.e?.6:.38)*(1-Z*.9)*tw*Math.min(1,q*1.4))}
  for(const p of lights){if(p.u>P[2])continue;const [X,Y,k,Z]=proj(p.x,p.y,p.z);const tw=.55+.45*Math.sin(now*3+p.ph);const head=P[2]<1&&P[2]-p.u<.02;dot(p.c,X,Y,(head?22:9)*k*u*(.8+.4*tw),(.85-Z*.8)*tw)}
  for(const p of orns){const q=back((P[3]-p.d)/.25);if(q<=0)continue;const [X,Y,k,Z]=proj(p.x,p.y,p.z);dot(p.c,X,Y,12*p.s*k*u*q,(.85-Z*.7));dot('#ffffff',X-1.5*u,Y-1.5*u,4*k*u*q,.6-Z*.5)}
+ // 5 small poinsettias made from glowing particles, scattered around the lower tree and gifts.
+ const poinsettias=[
+  [-.37,.24,.16,.78], [.37,.34,-.12,.72], [-.31,.57,-.08,.68],
+  [.29,.72,.12,.7], [-.03,.43,.39,.62]
+ ];
+ for(let fi=0;fi<poinsettias.length;fi++){
+  const [fx,fy,fz,fs]=poinsettias[fi];
+  const [PX,PY,pk,PZ]=proj(fx,fy,fz);
+  const pulse=.78+.22*Math.sin(now*2.4+fi*1.7);
+  const petalColors=['#ff5269','#ff7180','#d91f45','#ff9a9e','#f43b5a'];
+  for(let pet=0;pet<5;pet++){
+   const a=-Math.PI/2+pet*TAU/5+fi*.17;
+   const ox=Math.cos(a)*5.2*fs*pk*u,oy=Math.sin(a)*4.4*fs*pk*u;
+   dot(petalColors[(pet+fi)%petalColors.length],PX+ox,PY+oy,7.2*fs*pk*u, .78*pulse);
+   dot('#ffd5a0',PX+ox*.78,PY+oy*.78,2.2*fs*pk*u,.45*pulse);
+  }
+  dot('#ffe6a6',PX,PY,3.8*fs*pk*u,.9*pulse);
+  dot('#ffffff',PX-2.4*fs*pk*u,PY-2.1*fs*pk*u,1.8*fs*pk*u,.72*pulse);
+ }
  // stockings
  for(const [si,[a0,tier,dl,col]] of SOCKS.entries()){const q=back((P[3]-dl*.6)/.3);if(q<=0)continue;const y=(tierTop(tier)+tierBot(tier))/2+.01,r=surfR(y)*.82;const a=a0-ang+Math.PI*1.5;const [X,Y,k,Z]=proj(Math.cos(a)*r,y,Math.sin(a)*r);if(Z>.1)continue;sock(X,Y,14*u*k*q,col,Math.sin(now*1.4+a0)*.06,a0>0?-1:1,si)}
  // gifts, back to front
@@ -442,48 +461,67 @@ function ribbonTail(side,s,colr){
  cx.restore();
 }
 function bow(style,x,y,s,colr){
- // 蝴蝶結只保留緞帶耳朵與中心結，不再畫垂帶或連接尾帶。
- // 依款式分成一對、兩對、三對耳朵，讓不同禮物有不同輪廓。
- const pairCount=[1,2,3][style%3];
+ // 經典包裝蝴蝶結：簡潔耳朵＋中心結，視覺語言與禮物盒一致。
+ // 不畫布料紋理、不畫垂落長尾，只用乾淨色面與細緻輪廓光。
+ const pairs=[1,2,3][style%3];
  cx.save();cx.translate(x,y);
  cx.globalCompositeOperation='source-over';cx.globalAlpha=1;
 
- // 輕微接觸陰影，讓耳朵與中心結落在盒蓋上。
- cx.save();cx.globalAlpha=.18;cx.fillStyle='#091225';
- cx.shadowColor='rgba(0,0,0,.24)';cx.shadowBlur=Math.max(1,s*.13);
- cx.beginPath();cx.ellipse(0,s*.045,s*.42,s*.11,0,0,TAU);cx.fill();cx.restore();
+ // 小接觸陰影，固定在盒蓋緞帶交叉處。
+ cx.save();cx.globalAlpha=.16;cx.fillStyle='#091225';
+ cx.shadowColor='rgba(0,0,0,.2)';cx.shadowBlur=Math.max(1,s*.1);
+ cx.beginPath();cx.ellipse(0,s*.045,s*.42,s*.105,0,0,TAU);cx.fill();cx.restore();
 
- // 先畫較外側、較後方的耳朵，再逐層往中心收束。
- for(let layer=pairCount-1;layer>=0;layer--){
-  const spread=pairCount===1?.52:(pairCount===2?.62:.70);
-  const angle=pairCount===1?.10:(pairCount===2?.17:.23);
-  const scale=pairCount===1?1:(pairCount===2?(layer===0?.86:1):(.72+layer*.14));
-  const offset=layer*s*.105;
-  const earSize=s*scale;
+ // 由外向內畫出 1–3 對蝴蝶結耳朵；每一耳都是一片完整、圓潤的緞帶環。
+ for(let layer=pairs-1;layer>=0;layer--){
+  const size=s*(pairs===1?1:(pairs===2?(layer===0?.82:1):(.68+layer*.16)));
+  const spread=s*(pairs===1?.48:(pairs===2?.43:.38));
   for(const side of [-1,1]){
    cx.save();
-   cx.translate(side*offset, -s*.015+layer*s*.018);
-   cx.rotate(side*(angle+layer*.035));
-   ribbonLoop(side,earSize,colr);
+   cx.translate(side*spread*(pairs===1?0:layer*.42),-s*.02+layer*s*.018);
+   cx.rotate(side*(.12+layer*.045));
+   const w=size*.53,h=size*.43;
+   const grad=cx.createLinearGradient(-w,-h,w,h);
+   grad.addColorStop(0,shade(colr,1.42));
+   grad.addColorStop(.42,shade(colr,1.12));
+   grad.addColorStop(.78,shade(colr,.88));
+   grad.addColorStop(1,shade(colr,.72));
+   cx.fillStyle=grad;
+   cx.beginPath();
+   cx.moveTo(0,0);
+   cx.bezierCurveTo(-w*.12,-h*.72,-w*.72,-h*1.08,-w,-h*.42);
+   cx.bezierCurveTo(-w*1.2,h*.12,-w*.56,h*.72,0,h*.12);
+   cx.bezierCurveTo(w*.56,h*.72,w*1.2,h*.12,w,-h*.42);
+   cx.bezierCurveTo(w*.72,-h*1.08,w*.12,-h*.72,0,0);
+   cx.closePath();cx.fill();
+   // 內側留一條簡潔的亮面折線，不做繁複布料紋理。
+   cx.strokeStyle='rgba(255,255,255,.58)';
+   cx.lineWidth=Math.max(.55,s*.025);
+   cx.beginPath();
+   cx.moveTo(side<0?-w*.78:w*.78,-h*.38);
+   cx.quadraticCurveTo(side<0?-w*.42:w*.42,-h*.02,side<0?-w*.12:w*.12,h*.08);
+   cx.stroke();
+   // 輪廓光與禮物盒邊緣光一致，細而克制。
+   cx.save();cx.globalCompositeOperation='lighter';cx.globalAlpha=.34;
+   cx.shadowColor=colr;cx.shadowBlur=2.2;
+   cx.strokeStyle='rgba(255,255,255,.58)';cx.lineWidth=.55;
+   cx.stroke();cx.restore();
    cx.restore();
   }
  }
 
- // 小巧的中心束結，壓住所有耳朵的根部。
- const knot=cx.createLinearGradient(-s*.16,-s*.13,s*.16,s*.14);
- knot.addColorStop(0,shade(colr,1.5));
- knot.addColorStop(.25,shade(colr,1.22));
- knot.addColorStop(.55,shade(colr,.86));
- knot.addColorStop(.82,shade(colr,1.16));
- knot.addColorStop(1,shade(colr,.68));
+ // 中央小結，清楚壓住兩側耳朵的根部。
+ const knot=cx.createLinearGradient(-s*.14,-s*.12,s*.14,s*.12);
+ knot.addColorStop(0,shade(colr,1.42));knot.addColorStop(.45,shade(colr,1.08));knot.addColorStop(1,shade(colr,.7));
  cx.fillStyle=knot;cx.beginPath();
- cx.moveTo(-s*.155,-s*.085);
- cx.bezierCurveTo(-s*.2,-s*.015,-s*.12,s*.105,0,s*.13);
- cx.bezierCurveTo(s*.13,s*.105,s*.19,-s*.015,s*.15,-s*.085);
- cx.bezierCurveTo(s*.065,-s*.15,-s*.07,-s*.15,-s*.155,-s*.085);
+ cx.moveTo(-s*.14,-s*.085);
+ cx.quadraticCurveTo(-s*.2,0,-s*.1,s*.095);
+ cx.quadraticCurveTo(0,s*.16,s*.1,s*.095);
+ cx.quadraticCurveTo(s*.2,0,s*.14,-s*.085);
+ cx.quadraticCurveTo(0,-s*.16,-s*.14,-s*.085);
  cx.closePath();cx.fill();
- cx.strokeStyle='rgba(255,255,255,.54)';cx.lineWidth=Math.max(.5,s*.027);
- cx.beginPath();cx.moveTo(-s*.07,-s*.09);cx.quadraticCurveTo(-s*.12,-s*.01,-s*.045,s*.065);cx.stroke();
+ cx.strokeStyle='rgba(255,255,255,.62)';cx.lineWidth=Math.max(.55,s*.028);
+ cx.beginPath();cx.moveTo(-s*.06,-s*.09);cx.quadraticCurveTo(-s*.12,0,-s*.035,s*.075);cx.stroke();
  cx.restore();
 }
  // particle star
